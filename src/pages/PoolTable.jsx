@@ -2312,18 +2312,6 @@ const PoolTable = () => {
     // { key: "expectedCost", label: "Expected Cost", width: "min-w-[140px]", sortable: true },
     // { key: "netCost", label: "Net Cost", width: "min-w-[120px]", sortable: true },
     { key: "totalCost", label: "Total\nCost", width: "w-auto", sortable: true },
-    {
-      key: "walletStartBalance",
-      label: "Wallet Start\nBalance",
-      width: "w-auto",
-      sortable: true,
-    },
-    {
-      key: "walletEndBalance",
-      label: "Wallet End\nBalance",
-      width: "w-auto",
-      sortable: true,
-    },
     // { key: "walletLoss", label: "Wallet\nLoss", width: "min-w-[45px]", sortable: true },
     { key: "pP", label: "pP", width: "w-auto", sortable: true },
     { key: "lpAdd", label: "LP Add", width: "w-auto", sortable: true },
@@ -2771,8 +2759,6 @@ const PoolTable = () => {
                                       column.key === "expectedCost" ||
                                       column.key === "netCost" ||
                                       column.key === "totalCost" ||
-                                      column.key === "walletStartBalance" ||
-                                      column.key === "walletEndBalance" ||
                                       // column.key === "walletLoss" ||
                                       column.key === "pP" ||
                                       column.key === "lpAdd" ||
