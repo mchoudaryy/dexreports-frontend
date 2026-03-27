@@ -182,8 +182,6 @@ const TokenWallet = () => {
             .slice(4, 6)}-${report.startTime.toString().slice(6, 8)}`
         : "N/A",
       solanaAvgPrice: report.solAverage || 0,
-      walletStartBalance: report.walletStartBalance || 0,
-      walletEndBalance: report.walletEndBalance || 0,
       totalVolume: report.totalVolume || 0,
       transactions: report.totalTransactions || 0,
       totalBuys: report.buys || 0,
@@ -242,8 +240,6 @@ const TokenWallet = () => {
       "Date",
       "SOL Price",
       "IDLE Price",
-      "Start Balance",
-      "End Balance",
       "Volume",
       "TX Count",
       "Buys",
@@ -264,8 +260,6 @@ const TokenWallet = () => {
           row.date,
           `$${formatNumber(row.solanaAvgPrice, 2)}`,
           `$${formatNumber(row.tokenAverage, 8)}`,
-          `${formatNumber(row.walletStartBalance)} SOL`,
-          `${formatNumber(row.walletEndBalance)} SOL`,
           formatCurrency(row.totalVolume).replace(/,/g, ""),
           row.transactions,
           row.totalBuys,
@@ -304,8 +298,6 @@ const TokenWallet = () => {
       "Date",
       "SOL Price",
       "IDLE Price",
-      "Start Balance",
-      "End Balance",
       "Volume",
       "TX Count",
       "Buys",
@@ -326,8 +318,6 @@ const TokenWallet = () => {
           row.date,
           `$${formatNumber(row.solanaAvgPrice, 2)}`,
           `$${formatNumber(row.tokenAverage, 8)}`,
-          `${formatNumber(row.walletStartBalance)} SOL`,
-          `${formatNumber(row.walletEndBalance)} SOL`,
           formatCurrency(row.totalVolume).replace(/,/g, ""),
           row.transactions,
           row.totalBuys,
@@ -1131,8 +1121,6 @@ const TokenWallet = () => {
                   </h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-2">
                     {[
-                      { label: "Start Balance", value: `${formatNumber(selectedReport.walletStartBalance)} SOL`, color: "text-gray-900" },
-                      { label: "End Balance", value: `${formatNumber(selectedReport.walletEndBalance)} SOL`, color: "text-gray-900" },
                       { label: "Gas Fee", value: `${formatNumber(selectedReport.totalGasFee)} SOL`, color: "text-gray-900" },
                       { label: "Slippage + PL", value: formatCurrency(selectedReport.slippagePL), color: "text-gray-900" },
                       { label: "SOL Price", value: `$${formatNumber(selectedReport.solanaAvgPrice, 2)}`, color: "text-blue-600" },
