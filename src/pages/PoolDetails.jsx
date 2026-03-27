@@ -14,6 +14,7 @@ import {
   CheckCircle,
   PieChart,
   Activity,
+  Building2,
   Eye,
   RefreshCw,
   AlertCircle,
@@ -42,6 +43,7 @@ const PoolDetails = () => {
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
   const [totalSummary, setTotalSummary] = useState(null);
+  const [globalLatestReport, setGlobalLatestReport] = useState(null);
   // Modal state for report details
   const [selectedReport, setSelectedReport] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -52,6 +54,8 @@ const PoolDetails = () => {
     setSelectedReport({
       ...report,
       name: `${formatSymbol(poolData?.mintA?.symbol)}-${formatSymbol(poolData?.mintB?.symbol)}`,
+      // Ensure MMobject is explicitly passed for modal consumption
+      MMobject: report.MMobject || report.MMObject || {},
       // Normalize revenue property names if they differ from API
       poolRevenue: report.poolRevenue ?? report.totalRevenue ?? 0,
       companysRevenue: report.companysRevenue ?? report.companyRevenue ?? 0,
@@ -179,6 +183,11 @@ const PoolDetails = () => {
           setTotalSummary(null);
           setReportsTotalPages(responseData.totalPages || responseData.data?.totalPages || 1);
           setReportsTotalCount(responseData.count || responseData.data?.count || reportsData.length || 0);
+
+          // Capture absolute latest report when no date filter is applied
+          if (!startDate && !endDate && reportsData.length > 0 && reportsCurrentPage === 1) {
+            setGlobalLatestReport(reportsData[0]);
+          }
         }
       }
     } catch (error) {
@@ -262,6 +271,11 @@ const PoolDetails = () => {
           setTotalSummary(null);
           setReportsTotalPages(responseData.totalPages || responseData.data?.totalPages || 1);
           setReportsTotalCount(responseData.count || responseData.data?.count || reportsData.length || 0);
+
+          // Capture absolute latest report when no date filter is applied
+          if (!startDate && !endDate && reportsData.length > 0 && reportsCurrentPage === 1) {
+            setGlobalLatestReport(reportsData[0]);
+          }
         }
       }
     } catch (error) {
@@ -452,6 +466,14 @@ const PoolDetails = () => {
     );
   }
 
+  const latestReport = rwaReports.length > 0 ? rwaReports[0] : null;
+  const targetReport = globalLatestReport || latestReport;
+  const latestMMObject = targetReport?.MMobject || targetReport?.MMObject || {};
+  
+  // Prioritize absolute latest report data for the top 5 cards
+  const totalTVL = latestMMObject.poolLiquidity || targetReport?.poolLiquidity || 0;
+  const companyTVL = latestMMObject.companysLiquidity || targetReport?.companysLiquidity || targetReport?.companyLiquidity || 0;
+
   return (
     <div className="bg-gradient-to-br from-purple-50 via-blue-50 to-cyan-50 relative overflow-hidden min-h-screen">
       {/* Animated Background Elements */}
@@ -586,68 +608,102 @@ const PoolDetails = () => {
           </div>
         </div>
 
-        {/* Main Content Grid */}
-        <div className="grid grid-cols-1 xl:grid-cols-3 gap-5 lg:gap-6 mb-6">
-          {/* Left Column - Key Metrics */}
-          <div className="xl:col-span-2 space-y-5 lg:space-y-6">
-            {/* Key Metrics Grid */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 lg:gap-5">
-              {/* Volume Card */}
-              <div className="bg-white/80 backdrop-blur-xl rounded-3xl border border-white/20 p-4 shadow-xl hover:shadow-2xl transition-all duration-500 hover:scale-105 group">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-gradient-to-br from-green-500 to-emerald-500 rounded-2xl flex items-center justify-center shadow-lg">
-                    <Activity className="h-5 w-5 text-white" />
-                  </div>
-                  <div>
-                    <h3 className="text-xs font-semibold text-gray-600">
-                      24h Volume
-                    </h3>
-                    <p className="text-xl font-bold text-gray-900">
-                      {formatNumber(poolData.day.volume)}
-                    </p>
-                  </div>
-                </div>
+        {/* Key Metrics Grid - Now Full Width */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 lg:gap-5 mb-6">
+          {/* Volume Card */}
+          <div className="bg-white/80 backdrop-blur-xl rounded-3xl border border-white/20 p-4 shadow-xl hover:shadow-2xl transition-all duration-500 hover:scale-105 group">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-gradient-to-br from-green-500 to-emerald-500 rounded-2xl flex items-center justify-center shadow-lg">
+                <Activity className="h-5 w-5 text-white" />
               </div>
-
-              {/* Fees Card */}
-              <div className="bg-white/80 backdrop-blur-xl rounded-3xl border border-white/20 p-4 shadow-xl hover:shadow-2xl transition-all duration-500 hover:scale-105 group">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-pink-500 rounded-2xl flex items-center justify-center shadow-lg">
-                    <PieChart className="h-5 w-5 text-white" />
-                  </div>
-                  <div>
-                    <h3 className="text-xs font-semibold text-gray-600">
-                      24h Fees
-                    </h3>
-                    <p className="text-xl font-bold text-gray-900">
-                      {formatNumber(poolData.day.volumeFee)}
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              {/* APR Card */}
-              <div className="bg-white/80 backdrop-blur-xl rounded-3xl border border-white/20 p-4 shadow-xl hover:shadow-2xl transition-all duration-500 hover:scale-105 group">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-gradient-to-br from-orange-500 to-red-500 rounded-2xl flex items-center justify-center shadow-lg">
-                    <Zap className="h-5 w-5 text-white" />
-                  </div>
-                  <div>
-                    <h3 className="text-xs font-semibold text-gray-600">
-                      APR 24h
-                    </h3>
-                    <p className="text-xl font-bold text-green-600">
-                      {poolData.day.apr}%
-                    </p>
-                  </div>
-                </div>
+              <div>
+                <h3 className="text-xs font-semibold text-gray-600">
+                  24h Volume
+                </h3>
+                <p className="text-xl font-bold text-gray-900">
+                  {formatNumber(poolData.day.volume)}
+                </p>
               </div>
             </div>
+          </div>
 
+          {/* Fees Card */}
+          <div className="bg-white/80 backdrop-blur-xl rounded-3xl border border-white/20 p-4 shadow-xl hover:shadow-2xl transition-all duration-500 hover:scale-105 group">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-pink-500 rounded-2xl flex items-center justify-center shadow-lg">
+                <PieChart className="h-5 w-5 text-white" />
+              </div>
+              <div>
+                <h3 className="text-xs font-semibold text-gray-600">
+                  24h Fees
+                </h3>
+                <p className="text-xl font-bold text-gray-900">
+                  {formatNumber(poolData.day.volumeFee)}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* APR Card */}
+          <div className="bg-white/80 backdrop-blur-xl rounded-3xl border border-white/20 p-4 shadow-xl hover:shadow-2xl transition-all duration-500 hover:scale-105 group">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-gradient-to-br from-orange-500 to-red-500 rounded-2xl flex items-center justify-center shadow-lg">
+                <Zap className="h-5 w-5 text-white" />
+              </div>
+              <div>
+                <h3 className="text-xs font-semibold text-gray-600">
+                  APR 24h
+                </h3>
+                <p className="text-xl font-bold text-green-600">
+                  {poolData.day.apr}%
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* Total TVL Card */}
+          <div className="bg-white/80 backdrop-blur-xl rounded-3xl border border-white/20 p-4 shadow-xl hover:shadow-2xl transition-all duration-500 hover:scale-105 group">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-2xl flex items-center justify-center shadow-lg">
+                <Activity className="h-5 w-5 text-white" />
+              </div>
+              <div>
+                <h3 className="text-xs font-semibold text-gray-600">
+                  Total TVL
+                </h3>
+                <p className="text-xl font-bold text-gray-900">
+                  {formatNumber(totalTVL)}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* Company TVL Card */}
+          <div className="bg-white/80 backdrop-blur-xl rounded-3xl border border-white/20 p-4 shadow-xl hover:shadow-2xl transition-all duration-500 hover:scale-105 group">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-gradient-to-br from-indigo-500 to-purple-500 rounded-2xl flex items-center justify-center shadow-lg">
+                <Building2 className="h-5 w-5 text-white" />
+              </div>
+              <div>
+                <h3 className="text-xs font-semibold text-gray-600">
+                  String TVL
+                </h3>
+                <p className="text-xl font-bold text-gray-900">
+                  {formatNumber(companyTVL)}
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Main Content Grid */}
+        <div className="grid grid-cols-1 xl:grid-cols-3 gap-5 lg:gap-6 mb-6">
+          {/* Left Column */}
+          <div className="xl:col-span-2 space-y-4 lg:space-y-5">
             {/* RWA Reports Table */}
             <div className="bg-white/80 backdrop-blur-xl rounded-3xl border border-white/20 p-5 lg:p-6 shadow-2xl">
-              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-5">
-                <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2 mb-3 sm:mb-0">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-3">
+                <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2 mb-2 sm:mb-0">
                   <BarChart3 className="h-5 w-5 text-blue-500" />
                   Pool Reports
                 </h3>
@@ -1247,7 +1303,7 @@ const PoolDetails = () => {
             {/* Performance Card */}
             <div className="bg-white/80 backdrop-blur-xl rounded-3xl border border-white/20 p-5 lg:p-6 shadow-2xl">
               <h3 className="text-lg font-bold text-gray-900 mb-5 flex items-center gap-2">
-                <TrendingUp className="h-5 w-5 text-orange-500" />
+                <TrendingUp className="h-4 w-5 text-orange-500" />
                 Performance APR
               </h3>
 

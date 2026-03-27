@@ -207,6 +207,8 @@ const PoolReportModal = ({ reportData, isOpen, onClose }) => {
                   { label: "MM BUYS", value: mmObj.buys, icon: ArrowUpRight, bg: "bg-indigo-50", border: "border-indigo-100", iconColor: "text-indigo-500" },
                   { label: "MM SELLS", value: mmObj.sells, icon: ArrowDownRight, bg: "bg-rose-50", border: "border-rose-100", iconColor: "text-rose-500" },
                   { label: "SOLANA AVG PRICE", value: mmObj.solAverage, icon: Coins, bg: "bg-purple-50", border: "border-purple-100", iconColor: "text-purple-500", isCurrency: true },
+                  { label: "WALLET START BALANCE", value: mmObj.walletStartBalance, icon: Wallet, bg: "bg-green-50", border: "border-green-100", iconColor: "text-green-500", suffix: " SOL" },
+                  { label: "WALLET END BALANCE", value: mmObj.walletEndBalance, icon: Wallet, bg: "bg-orange-50", border: "border-orange-100", iconColor: "text-orange-500", suffix: " SOL" },
                   { label: "TOTAL VOLUME", value: mmObj.totalVolume, icon: DollarSign, bg: "bg-blue-50", border: "border-blue-100", iconColor: "text-blue-500", isCurrency: true },
                   { label: "MM VOLUME TO POOL", value: mmObj.mmTotalVolume, icon: BarChart3, bg: "bg-amber-50", border: "border-amber-100", iconColor: "text-amber-500", isCurrency: true },
                   { label: "ARB(USERS) VOLUME", value: mmObj.usersTotalVolume, icon: Users, bg: "bg-emerald-50", border: "border-emerald-100", iconColor: "text-emerald-500", isCurrency: true },

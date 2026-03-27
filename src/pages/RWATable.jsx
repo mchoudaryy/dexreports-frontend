@@ -2781,6 +2781,8 @@ console.log("liquidityPools" ,liquidityPools);
     { key: "poolRayFee", label: "Platform Fee", width: "w-auto", sortable: true },
     { key: "mmRayCost", label: "Platform Fee Cost", width: "w-auto", sortable: true },
     { key: "cost", label: "Expected Cost", width: "w-auto", sortable: true },
+    { key: "walletStartBalance", label: "Wallet Start Balance", width: "w-auto", sortable: true },
+    { key: "walletEndBalance", label: "Wallet End Balance", width: "w-auto", sortable: true },
     { key: "totalCost", label: "Total Cost", width: "w-auto", sortable: true },
     { key: "slipageAndloss", label: "Slip & PL", width: "w-auto", sortable: true },
     // { key: "agentsVolume", label: "Agents\nVolume", width: "min-w-[48px]", sortable: true },
@@ -3244,6 +3246,8 @@ console.log("liquidityPools" ,liquidityPools);
                                       column.key === "expectedCost" ||
                                       column.key === "netCost" ||
                                       column.key === "totalCost" ||
+                                      column.key === "walletStartBalance" ||
+                                      column.key === "walletEndBalance" ||
                                       // column.key === "walletLoss" ||
                                       column.key === "pP" ||
                                       column.key === "lpAdd" ||
