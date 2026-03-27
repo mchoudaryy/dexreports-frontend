@@ -254,8 +254,6 @@ const TableRowModal = ({ rowData, isOpen, onClose, type = "report" }) => {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {[
                     { label: "SOLANA AVG PRICE", value: rowData.solAverage, icon: Coins, bg: "bg-purple-50", border: "border-purple-100", iconColor: "text-purple-500", isCurrency: true },
-                    { label: "WALLET START BALANCE", value: rowData.walletStartBalance, icon: Wallet, bg: "bg-green-50", border: "border-green-100", iconColor: "text-green-500", suffix: " SOL" },
-                    { label: "WALLET END BALANCE", value: rowData.walletEndBalance, icon: Wallet, bg: "bg-orange-50", border: "border-orange-100", iconColor: "text-orange-500", suffix: " SOL" },
                     { label: "TOTAL VOLUME", value: rowData.totalVolume, icon: DollarSign, bg: "bg-blue-50", border: "border-blue-100", iconColor: "text-blue-500", isCurrency: true },
                     { label: "MM VOLUME TO POOL", value: rowData.mmTotalVolume, icon: BarChart3, bg: "bg-amber-50", border: "border-amber-100", iconColor: "text-amber-500", isCurrency: true },
                     { label: "ARB(USERS) VOLUME", value: rowData.usersTotalVolume, icon: Users, bg: "bg-emerald-50", border: "border-emerald-100", iconColor: "text-emerald-500", isCurrency: true },
