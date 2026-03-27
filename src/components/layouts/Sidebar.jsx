@@ -155,7 +155,7 @@ export const Sidebar = ({ sidebarOpen, setSidebarOpen }) => {
       ...(networksMenuItem ? [networksMenuItem] : []),
       ...(tokensMenuItem ? [tokensMenuItem] : []),
       ...(adminMenuItem ? [adminMenuItem] : []),
-      ...(user?.role !== "superuser" ? sidebarMenu.slice(3) : []),
+      ...sidebarMenu.slice(3),
     ];
 
     // console.log("Final menu structure:", newMenu);
@@ -318,7 +318,7 @@ export const Sidebar = ({ sidebarOpen, setSidebarOpen }) => {
                 {!item.children ? (
                   item.externalUrl ? (
                     <button
-                      onClick={() => window.open(item.externalUrl, '_blank')}
+                      onClick={() => (window.location.href = item.externalUrl)}
                       className="group flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold transition-all duration-500 ease-out border-2 border-transparent relative w-full text-left text-gray-600 hover:bg-white/90 hover:shadow-lg hover:scale-[1.02] hover:text-gray-900 hover:border-orange-200/60 bg-white/50 backdrop-blur-sm"
                     >
                       <div className="transition-all duration-500 ease-out group-hover:scale-110 z-10 text-gray-500 group-hover:text-orange-600">
@@ -635,7 +635,7 @@ export const Sidebar = ({ sidebarOpen, setSidebarOpen }) => {
                   item.externalUrl ? (
                     <button
                       onClick={() => {
-                        window.open(item.externalUrl, '_blank');
+                        window.location.href = item.externalUrl;
                         setSidebarOpen(false);
                       }}
                       className="group flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold transition-all duration-500 ease-out border-2 border-transparent relative w-full text-left text-gray-600 hover:bg-white/90 hover:shadow-lg hover:scale-[1.02] hover:text-gray-900 hover:border-orange-200/60 bg-white/50 backdrop-blur-sm"
