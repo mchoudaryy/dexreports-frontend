@@ -1,4 +1,4 @@
-import { LayoutDashboard, TrendingUp, Navigation, Layers } from "lucide-react";
+import { LayoutDashboard, TrendingUp, Navigation, Layers, LineChart } from "lucide-react";
 
 export const sidebarMenu = [
   {
@@ -30,5 +30,10 @@ export const sidebarMenu = [
     title: "Market Making",
     icon: <TrendingUp size={20} />,
     externalUrl: "https://dexmm.stringonchain.io",
+  },
+  {
+    title: "Idlemine Stats",
+    icon: <LineChart size={20} />,
+    externalUrl: "https://stats.idlemine.io/",
   },
 ];
