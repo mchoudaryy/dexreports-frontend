@@ -17,6 +17,11 @@ import {
   Eye,
   EyeOff,
   BarChart3,
+  Link,
+  Settings,
+  Plus,
+  X,
+  Save,
 } from "lucide-react";
 import { ADMIN_API } from "../services/ApiHandlers";
 
@@ -60,7 +65,24 @@ const AuditExport = () => {
   const [walletStatus,   setWalletStatus]   = useState("all");
   const [poolType,       setPoolType]       = useState("all");
   const [selectedWallet, setSelectedWallet] = useState("");
-  const [activeTab,      setActiveTab]      = useState("wallet"); // "wallet" | "pool"
+  const [activeTab,      setActiveTab]      = useState("wallet"); // "wallet" | "pool" | "solscan"
+
+  // ── Solscan tab state ─────────────────────────────────────────────────────
+  const [ssWallet,       setSsWallet]       = useState("");
+  const [ssStartDate,    setSsStartDate]    = useState(thirtyDaysAgo);
+  const [ssEndDate,      setSsEndDate]      = useState(today);
+  const [ssData,         setSsData]         = useState(null);   // { raw, filtered, sums, meta, config }
+  const [ssLoading,      setSsLoading]      = useState(false);
+  const [ssExporting,    setSsExporting]    = useState(false);
+  const [ssError,        setSsError]        = useState("");
+  // Config editor
+  const [ssConfigs,      setSsConfigs]      = useState([]);
+  const [showCfgEditor,  setShowCfgEditor]  = useState(false);
+  const [cfgWallet,      setCfgWallet]      = useState("");
+  const [cfgLabel,       setCfgLabel]       = useState("");
+  const [cfgPairs,       setCfgPairs]       = useState("");   // newline-separated
+  const [cfgTokens,      setCfgTokens]      = useState("");   // newline-separated
+  const [cfgSaving,      setCfgSaving]      = useState(false);
 
   // Data
   const [summary,     setSummary]     = useState(null);
@@ -148,6 +170,79 @@ const AuditExport = () => {
   }, [activeTab]);
 
   const applyFilters = () => { fetchSummary(); fetchRows(1); };
+
+  // ── Solscan: load configs on mount ───────────────────────────────────────
+  useEffect(() => {
+    ADMIN_API.AUDIT_SOLSCAN_GET_WALLET_CONFIGS()
+      .then(r => { if (r?.data?.configs) setSsConfigs(r.data.configs); })
+      .catch(() => {});
+  }, []);
+
+  // ── Solscan: fetch transfers ──────────────────────────────────────────────
+  const fetchSolscanTransfers = async () => {
+    if (!ssWallet) { setSsError("Please select a wallet."); return; }
+    setSsLoading(true);
+    setSsError("");
+    setSsData(null);
+    try {
+      const r = await ADMIN_API.AUDIT_SOLSCAN_GET_TRANSFERS({
+        walletAddress: ssWallet,
+        startDate: ssStartDate,
+        endDate: ssEndDate,
+      });
+      if (r?.data?.success) setSsData(r.data);
+      else setSsError(r?.data?.message || "Fetch failed");
+    } catch (e) {
+      setSsError(e?.response?.data?.message || "Solscan fetch failed. Check API key / wallet.");
+    } finally {
+      setSsLoading(false);
+    }
+  };
+
+  // ── Solscan: download Excel (mirrors Python script output) ───────────────
+  const downloadSolscanExcel = async () => {
+    if (!ssData) return;
+    setSsExporting(true);
+    try {
+      const wb = XLSX.utils.book_new();
+
+      // Sheet 1 — Raw_Data (all API records)
+      if (ssData.raw?.length) {
+        XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(ssData.raw), "Raw_Data");
+      }
+
+      // Sheet 2 — Filtered (same logic as Python filtered_df)
+      if (ssData.filtered?.length) {
+        XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(ssData.filtered), "Filtered");
+      }
+
+      // Sheet 3 — Sums (same as Python sums_df)
+      const sumsSheet = XLSX.utils.json_to_sheet(
+        ssData.sums?.map(s => ({ Case: s.case, Balance_Sum: s.balance_sum, Token: s.token_symbol || s.token_address, Flow: s.flow })) || []
+      );
+      XLSX.utils.book_append_sheet(wb, sumsSheet, "Sums");
+
+      const wallet = ssWallet.slice(0, 8);
+      XLSX.writeFile(wb, `Solscan_${wallet}_${ssStartDate}_to_${ssEndDate}.xlsx`);
+    } finally {
+      setSsExporting(false);
+    }
+  };
+
+  // ── Solscan: save wallet config ───────────────────────────────────────────
+  const saveSolscanConfig = async () => {
+    if (!cfgWallet) return;
+    setCfgSaving(true);
+    try {
+      const pairAddresses  = cfgPairs.split("\n").map(s => s.trim()).filter(Boolean);
+      const tokenAddresses = cfgTokens.split("\n").map(s => s.trim()).filter(Boolean);
+      await ADMIN_API.AUDIT_SOLSCAN_UPSERT_WALLET_CONFIG({ walletAddress: cfgWallet, label: cfgLabel, pairAddresses, tokenAddresses });
+      const r = await ADMIN_API.AUDIT_SOLSCAN_GET_WALLET_CONFIGS();
+      if (r?.data?.configs) setSsConfigs(r.data.configs);
+      setShowCfgEditor(false);
+    } catch { /* ignore */ }
+    finally { setCfgSaving(false); }
+  };
 
   // ── Excel export ──────────────────────────────────────────────────────────
   const handleExport = async () => {
@@ -376,7 +471,7 @@ const AuditExport = () => {
 
       {/* Tabs */}
       <div className="flex gap-1 mb-4 bg-[#0f172a] border border-[#1e293b] rounded-xl p-1 w-fit">
-        {[["wallet", "Wallet-wise"], ["pool", "Pool-wise"]].map(([key, label]) => (
+        {[["wallet", "Wallet-wise"], ["pool", "Pool-wise"], ["solscan", "Solscan Transfer"]].map(([key, label]) => (
           <button key={key} onClick={() => setActiveTab(key)}
             className={`px-4 py-1.5 rounded-lg text-sm font-medium transition-colors ${activeTab === key ? "bg-blue-600 text-white" : "text-gray-400 hover:text-white"}`}>
             {label}
@@ -384,7 +479,214 @@ const AuditExport = () => {
         ))}
       </div>
 
-      {/* Table */}
+      {/* ── Solscan Transfer Panel ── */}
+      {activeTab === "solscan" && (
+        <div className="space-y-4">
+
+          {/* Solscan controls row */}
+          <div className="bg-[#0f172a] border border-[#1e293b] rounded-xl p-4">
+            <div className="flex flex-wrap gap-3 items-end">
+              <div className="flex flex-col gap-1">
+                <label className="text-xs text-gray-400">Wallet</label>
+                <select value={ssWallet} onChange={e => setSsWallet(e.target.value)}
+                  className="bg-[#1e293b] border border-[#2d3f55] rounded-lg px-3 py-2 text-sm text-white w-56 focus:outline-none focus:border-blue-500">
+                  <option value="">Select wallet…</option>
+                  {walletList.map(w => (
+                    <option key={w.walletAddress} value={w.walletAddress}>
+                      {ssConfigs.find(c => c.walletAddress === w.walletAddress)?.label || shortAddr(w.walletAddress)} ({w.status})
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="flex flex-col gap-1">
+                <label className="text-xs text-gray-400">Start Date</label>
+                <input type="date" value={ssStartDate} max={ssEndDate}
+                  onChange={e => setSsStartDate(e.target.value)}
+                  className="bg-[#1e293b] border border-[#2d3f55] rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-blue-500" />
+              </div>
+              <div className="flex flex-col gap-1">
+                <label className="text-xs text-gray-400">End Date</label>
+                <input type="date" value={ssEndDate} min={ssStartDate} max={today}
+                  onChange={e => setSsEndDate(e.target.value)}
+                  className="bg-[#1e293b] border border-[#2d3f55] rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-blue-500" />
+              </div>
+              <button onClick={fetchSolscanTransfers} disabled={ssLoading}
+                className="flex items-center gap-1.5 px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-sm font-medium disabled:opacity-50 transition-colors">
+                {ssLoading ? <Loader2 size={14} className="animate-spin" /> : <Link size={14} />}
+                Fetch Transfers
+              </button>
+              {ssData && (
+                <button onClick={downloadSolscanExcel} disabled={ssExporting}
+                  className="flex items-center gap-1.5 px-4 py-2 bg-green-600 hover:bg-green-500 text-white rounded-lg text-sm font-medium disabled:opacity-50 transition-colors">
+                  {ssExporting ? <Loader2 size={14} className="animate-spin" /> : <Download size={14} />}
+                  Download Excel
+                </button>
+              )}
+              <button onClick={() => setShowCfgEditor(v => !v)}
+                className="flex items-center gap-1.5 px-3 py-2 bg-[#1e293b] hover:bg-[#273347] text-gray-300 rounded-lg text-sm transition-colors ml-auto">
+                <Settings size={14} />
+                Configure Filters
+              </button>
+            </div>
+
+            {ssError && (
+              <div className="mt-3 flex items-start gap-2 p-3 rounded-lg bg-red-500/10 border border-red-500/30 text-red-300 text-sm">
+                <AlertCircle size={14} className="mt-0.5 shrink-0" />{ssError}
+              </div>
+            )}
+
+            {/* Config editor */}
+            {showCfgEditor && (
+              <div className="mt-4 pt-4 border-t border-[#1e293b]">
+                <p className="text-xs text-gray-400 mb-3 font-medium">
+                  Wallet Filter Configuration — set which counterparty addresses and tokens to include in the Filtered sheet (same as Python script logic).
+                </p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                  <div className="flex flex-col gap-1">
+                    <label className="text-xs text-gray-400">Wallet Address</label>
+                    <select value={cfgWallet} onChange={e => {
+                      setCfgWallet(e.target.value);
+                      const c = ssConfigs.find(x => x.walletAddress === e.target.value);
+                      setCfgLabel(c?.label || "");
+                      setCfgPairs((c?.pairAddresses || []).join("\n"));
+                      setCfgTokens((c?.tokenAddresses || []).join("\n"));
+                    }} className="bg-[#1e293b] border border-[#2d3f55] rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-blue-500">
+                      <option value="">Select wallet…</option>
+                      {walletList.map(w => (
+                        <option key={w.walletAddress} value={w.walletAddress}>{shortAddr(w.walletAddress)}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="flex flex-col gap-1">
+                    <label className="text-xs text-gray-400">Label (e.g. BUNDLE 5)</label>
+                    <input type="text" value={cfgLabel} onChange={e => setCfgLabel(e.target.value)} placeholder="BUNDLE 5"
+                      className="bg-[#1e293b] border border-[#2d3f55] rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-blue-500" />
+                  </div>
+                  <div className="flex flex-col gap-1">
+                    <label className="text-xs text-gray-400">Pair Addresses (one per line)</label>
+                    <textarea value={cfgPairs} onChange={e => setCfgPairs(e.target.value)} rows={4} placeholder={"GpMZbSM2...\nAnotherAddr..."}
+                      className="bg-[#1e293b] border border-[#2d3f55] rounded-lg px-3 py-2 text-sm text-white font-mono focus:outline-none focus:border-blue-500 resize-none" />
+                  </div>
+                  <div className="flex flex-col gap-1">
+                    <label className="text-xs text-gray-400">Token Addresses (one per line)</label>
+                    <textarea value={cfgTokens} onChange={e => setCfgTokens(e.target.value)} rows={4} placeholder={"So11111111...\nBjcRmwm8..."}
+                      className="bg-[#1e293b] border border-[#2d3f55] rounded-lg px-3 py-2 text-sm text-white font-mono focus:outline-none focus:border-blue-500 resize-none" />
+                  </div>
+                </div>
+                <div className="flex gap-2 mt-3">
+                  <button onClick={saveSolscanConfig} disabled={!cfgWallet || cfgSaving}
+                    className="flex items-center gap-1.5 px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-sm disabled:opacity-50 transition-colors">
+                    {cfgSaving ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />}
+                    Save Config
+                  </button>
+                  <button onClick={() => setShowCfgEditor(false)}
+                    className="flex items-center gap-1.5 px-4 py-2 bg-[#1e293b] hover:bg-[#273347] text-gray-300 rounded-lg text-sm transition-colors">
+                    <X size={14} />Cancel
+                  </button>
+                </div>
+
+                {/* Saved configs list */}
+                {ssConfigs.length > 0 && (
+                  <div className="mt-4">
+                    <p className="text-xs text-gray-400 mb-2">Saved configurations:</p>
+                    <div className="flex flex-wrap gap-2">
+                      {ssConfigs.map(c => (
+                        <div key={c.walletAddress} className="flex items-center gap-2 bg-[#131f35] border border-[#1e293b] rounded-lg px-3 py-1.5 text-xs">
+                          <span className="text-white font-medium">{c.label || shortAddr(c.walletAddress)}</span>
+                          <span className="text-gray-500">{shortAddr(c.walletAddress)}</span>
+                          <span className="text-blue-400">{c.pairAddresses?.length} pairs</span>
+                          <span className="text-teal-400">{c.tokenAddresses?.length} tokens</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* Solscan results */}
+          {ssLoading && (
+            <div className="flex items-center justify-center py-16 bg-[#0f172a] border border-[#1e293b] rounded-xl">
+              <Loader2 size={28} className="animate-spin text-blue-400 mr-3" />
+              <span className="text-gray-400 text-sm">Fetching from Solscan API…</span>
+            </div>
+          )}
+
+          {ssData && !ssLoading && (
+            <div className="space-y-4">
+              {/* Stats row */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                <div className="bg-[#0f172a] border border-[#1e293b] rounded-xl p-4">
+                  <p className="text-xs text-gray-400">Raw Records</p>
+                  <p className="text-2xl font-bold text-white mt-1">{ssData.meta?.rawCount?.toLocaleString()}</p>
+                </div>
+                <div className="bg-[#0f172a] border border-[#1e293b] rounded-xl p-4">
+                  <p className="text-xs text-gray-400">Filtered Records</p>
+                  <p className="text-2xl font-bold text-blue-400 mt-1">{ssData.meta?.filteredCount?.toLocaleString()}</p>
+                  {!ssData.config && <p className="text-xs text-yellow-500 mt-0.5">No filter config set</p>}
+                </div>
+                {ssData.sums?.map(s => (
+                  <div key={s.case} className="bg-[#0f172a] border border-[#1e293b] rounded-xl p-4">
+                    <p className="text-xs text-gray-400">{s.case}</p>
+                    <p className={`text-lg font-bold mt-1 ${s.flow === "in" ? "text-green-400" : "text-red-400"}`}>
+                      {Number(s.balance_sum).toFixed(6)}
+                    </p>
+                    <p className="text-xs text-gray-600 truncate">{s.token_symbol || s.token_address?.slice(0, 12)}</p>
+                  </div>
+                ))}
+              </div>
+
+              {/* Filtered table preview */}
+              <div className="bg-[#0f172a] border border-[#1e293b] rounded-xl overflow-hidden">
+                <div className="flex items-center justify-between px-4 py-3 border-b border-[#1e293b]">
+                  <span className="text-sm font-medium text-gray-300">Filtered Transfers Preview</span>
+                  <span className="text-xs text-gray-500">{ssData.filtered?.length} rows (first 100 shown)</span>
+                </div>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-xs">
+                    <thead>
+                      <tr className="text-gray-400 bg-[#0a1221] border-b border-[#1e293b]">
+                        <th className="px-3 py-2 text-left">Time</th>
+                        <th className="px-3 py-2 text-left">From</th>
+                        <th className="px-3 py-2 text-left">To</th>
+                        <th className="px-3 py-2 text-left">Token</th>
+                        <th className="px-3 py-2 text-right">Balance</th>
+                        <th className="px-3 py-2 text-center">Flow</th>
+                        <th className="px-3 py-2 text-left">Tx Hash</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {(ssData.filtered || []).slice(0, 100).map((r, i) => (
+                        <tr key={i} className="border-b border-[#1e293b] hover:bg-[#131f35]">
+                          <td className="px-3 py-2 text-gray-400 whitespace-nowrap">
+                            {r.block_time ? new Date(r.block_time * 1000).toLocaleString() : "—"}
+                          </td>
+                          <td className="px-3 py-2 text-gray-300 font-mono">{shortAddr(r.from_address)}</td>
+                          <td className="px-3 py-2 text-gray-300 font-mono">{shortAddr(r.to_address)}</td>
+                          <td className="px-3 py-2 text-gray-300">{r.token_symbol || shortAddr(r.token_address)}</td>
+                          <td className="px-3 py-2 text-right font-medium text-white whitespace-nowrap">
+                            {Number(r.balance || 0).toFixed(6)}
+                          </td>
+                          <td className="px-3 py-2 text-center">
+                            <span className={`px-1.5 py-0.5 rounded text-xs font-medium ${r.flow === "in" ? "bg-green-500/20 text-green-400" : "bg-red-500/20 text-red-400"}`}>
+                              {r.flow}
+                            </span>
+                          </td>
+                          <td className="px-3 py-2 text-blue-400 font-mono">{shortAddr(r.trans_id || r.tx_hash || r.signature)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Table (wallet + pool tabs only) */}
+      {activeTab !== "solscan" && (
       <div className="bg-[#0f172a] border border-[#1e293b] rounded-xl overflow-hidden">
         <div className="flex items-center justify-between px-4 py-3 border-b border-[#1e293b]">
           <span className="text-sm font-medium text-gray-300">
@@ -589,6 +891,7 @@ const AuditExport = () => {
           </div>
         )}
       </div>
+      )} {/* end activeTab !== "solscan" */}
 
       <p className="mt-4 text-xs text-gray-600 text-center">
         Data sourced from daily market making reports stored in the database.

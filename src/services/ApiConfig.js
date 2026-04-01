@@ -103,4 +103,9 @@ export const API_CONFIG = {
   AUDIT_DATA:      `${audit}/data`,
   AUDIT_POOL_DATA: `${audit}/pool-data`,
   AUDIT_EXPORT:    `${audit}/export`,
+
+  // Solscan Transfer Export
+  AUDIT_SOLSCAN_TRANSFERS:     `${audit}/solscan/transfers`,
+  AUDIT_SOLSCAN_WALLET_CONFIGS: `${audit}/solscan/wallet-configs`,
+  AUDIT_SOLSCAN_WALLET_CONFIG:  `${audit}/solscan/wallet-config`,
 };
