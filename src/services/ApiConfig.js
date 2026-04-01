@@ -105,7 +105,7 @@ export const API_CONFIG = {
   AUDIT_EXPORT:    `${audit}/export`,
 
   // Solscan Transfer Export
-  AUDIT_SOLSCAN_TRANSFERS:     `${audit}/solscan/transfers`,
-  AUDIT_SOLSCAN_WALLET_CONFIGS: `${audit}/solscan/wallet-configs`,
-  AUDIT_SOLSCAN_WALLET_CONFIG:  `${audit}/solscan/wallet-config`,
+  AUDIT_SOLSCAN_TRANSFERS:  `${audit}/solscan/transfers`,
+  AUDIT_SOLSCAN_POOLS:      `${audit}/solscan/pools`,
+  AUDIT_SOLSCAN_POOL_TOKENS: `${audit}/solscan/pool-tokens`,
 };
