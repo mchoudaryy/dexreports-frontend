@@ -4,6 +4,7 @@ const BASE_URL = import.meta.env.VITE_API_URL;
 const auth = `${BASE_URL}/api/auth`;
 const admin = `${BASE_URL}/api/admin`;
 const main = `${BASE_URL}/api/v1/main`;
+const audit = `${BASE_URL}/api/v1/audit`;
 
 export const API_CONFIG = {
   // Auth endpoints
@@ -95,4 +96,13 @@ export const API_CONFIG = {
   ADMIN_GET_SETTINGS: `${admin}/getSettings`,
 
   ADMIN_GET_WALLETS: `${admin}/getWallets`,
+
+  // =============================== AUDIT / MM EXPORT ========================
+  AUDIT_SYNC: `${audit}/sync`,
+  AUDIT_SUMMARY: `${audit}/summary`,
+  AUDIT_DATA: `${audit}/data`,
+  AUDIT_EXPORT: `${audit}/export`,
+  AUDIT_TRANSACTIONS: `${audit}/transactions`,
+  AUDIT_SYNC_STATUS: `${audit}/sync-status`,
+  AUDIT_WALLETS: `${audit}/wallets`,
 };
