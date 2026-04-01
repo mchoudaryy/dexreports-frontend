@@ -487,63 +487,6 @@ export const ADMIN_API = {
     console.log("[API] Sending ADMIN_UPDATE_COMPOUND_WALLET payload:", payload);
     return api.post(API_CONFIG.ADMIN_UPDATE_COMPOUND_WALLET, payload);
   },
-
-  // ─── Audit / Market Making Export ─────────────────────────────────────────
-
-  AUDIT_GET_WALLETS: () => api.get(API_CONFIG.AUDIT_WALLETS),
-
-  AUDIT_GET_SUMMARY: ({ startDate, endDate, walletStatus, poolType, walletAddress } = {}) => {
-    const params = {};
-    if (startDate) params.startDate = startDate;
-    if (endDate) params.endDate = endDate;
-    if (walletStatus) params.walletStatus = walletStatus;
-    if (poolType) params.poolType = poolType;
-    if (walletAddress) params.walletAddress = walletAddress;
-    return api.get(API_CONFIG.AUDIT_SUMMARY, { params });
-  },
-
-  AUDIT_GET_DATA: ({ startDate, endDate, walletStatus, poolType, walletAddress, page = 1, limit = 50 } = {}) => {
-    const params = { page, limit };
-    if (startDate) params.startDate = startDate;
-    if (endDate) params.endDate = endDate;
-    if (walletStatus) params.walletStatus = walletStatus;
-    if (poolType) params.poolType = poolType;
-    if (walletAddress) params.walletAddress = walletAddress;
-    return api.get(API_CONFIG.AUDIT_DATA, { params });
-  },
-
-  AUDIT_GET_POOL_DATA: ({ startDate, endDate, poolType, page = 1, limit = 50 } = {}) => {
-    const params = { page, limit };
-    if (startDate) params.startDate = startDate;
-    if (endDate) params.endDate = endDate;
-    if (poolType) params.poolType = poolType;
-    return api.get(API_CONFIG.AUDIT_POOL_DATA, { params });
-  },
-
-  AUDIT_EXPORT: ({ startDate, endDate, walletStatus, poolType, walletAddress } = {}) => {
-    const params = {};
-    if (startDate) params.startDate = startDate;
-    if (endDate) params.endDate = endDate;
-    if (walletStatus) params.walletStatus = walletStatus;
-    if (poolType) params.poolType = poolType;
-    if (walletAddress) params.walletAddress = walletAddress;
-    return api.get(API_CONFIG.AUDIT_EXPORT, { params, timeout: 120000 });
-  },
-
-  // ── Solscan Transfer Export ─────────────────────────────────────────────
-  AUDIT_SOLSCAN_GET_POOLS: () =>
-    api.get(API_CONFIG.AUDIT_SOLSCAN_POOLS),
-
-  AUDIT_SOLSCAN_SAVE_POOL_TOKENS: ({ poolWalletDataId, tokenAddresses } = {}) =>
-    api.post(API_CONFIG.AUDIT_SOLSCAN_POOL_TOKENS, { poolWalletDataId, tokenAddresses }),
-
-  AUDIT_SOLSCAN_GET_TRANSFERS: ({ poolWalletDataId, startDate, endDate } = {}) => {
-    const params = {};
-    if (poolWalletDataId) params.poolWalletDataId = poolWalletDataId;
-    if (startDate) params.startDate = startDate;
-    if (endDate) params.endDate = endDate;
-    return api.get(API_CONFIG.AUDIT_SOLSCAN_TRANSFERS, { params, timeout: 120000 });
-  },
 };
 
 export default api;
