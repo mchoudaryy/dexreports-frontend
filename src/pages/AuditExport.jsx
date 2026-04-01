@@ -14,12 +14,9 @@ import {
   Wallet,
   ChevronDown,
   ChevronUp,
-  Eye,
-  EyeOff,
   BarChart3,
   Link,
   Settings,
-  Plus,
   X,
   Save,
 } from "lucide-react";
@@ -68,21 +65,19 @@ const AuditExport = () => {
   const [activeTab,      setActiveTab]      = useState("wallet"); // "wallet" | "pool" | "solscan"
 
   // ── Solscan tab state ─────────────────────────────────────────────────────
-  const [ssWallet,       setSsWallet]       = useState("");
+  const [ssPools,        setSsPools]        = useState([]);   // pools from poolWalletData + LiquidityPool
+  const [ssPoolId,       setSsPoolId]       = useState("");   // selected poolWalletDataId (_id)
+  const [ssPool,         setSsPool]         = useState(null); // selected pool object
   const [ssStartDate,    setSsStartDate]    = useState(thirtyDaysAgo);
   const [ssEndDate,      setSsEndDate]      = useState(today);
-  const [ssData,         setSsData]         = useState(null);   // { raw, filtered, sums, meta, config }
+  const [ssData,         setSsData]         = useState(null);
   const [ssLoading,      setSsLoading]      = useState(false);
   const [ssExporting,    setSsExporting]    = useState(false);
   const [ssError,        setSsError]        = useState("");
-  // Config editor
-  const [ssConfigs,      setSsConfigs]      = useState([]);
-  const [showCfgEditor,  setShowCfgEditor]  = useState(false);
-  const [cfgWallet,      setCfgWallet]      = useState("");
-  const [cfgLabel,       setCfgLabel]       = useState("");
-  const [cfgPairs,       setCfgPairs]       = useState("");   // newline-separated
-  const [cfgTokens,      setCfgTokens]      = useState("");   // newline-separated
-  const [cfgSaving,      setCfgSaving]      = useState(false);
+  // Token address editor for the selected pool
+  const [ssTokensEdit,   setSsTokensEdit]   = useState("");   // newline-separated for textarea
+  const [ssTokensSaving, setSsTokensSaving] = useState(false);
+  const [showTokenEdit,  setShowTokenEdit]  = useState(false);
 
   // Data
   const [summary,     setSummary]     = useState(null);
@@ -171,29 +166,40 @@ const AuditExport = () => {
 
   const applyFilters = () => { fetchSummary(); fetchRows(1); };
 
-  // ── Solscan: load configs on mount ───────────────────────────────────────
+  // ── Solscan: load pools on mount ────────────────────────────────────────
   useEffect(() => {
-    ADMIN_API.AUDIT_SOLSCAN_GET_WALLET_CONFIGS()
-      .then(r => { if (r?.data?.configs) setSsConfigs(r.data.configs); })
+    ADMIN_API.AUDIT_SOLSCAN_GET_POOLS()
+      .then(r => { if (r?.data?.pools) setSsPools(r.data.pools); })
       .catch(() => {});
   }, []);
 
+  // ── Solscan: select pool → populate state ────────────────────────────────
+  const handlePoolSelect = (poolWalletDataId) => {
+    setSsPoolId(poolWalletDataId);
+    setSsData(null);
+    setSsError("");
+    const pool = ssPools.find(p => p._id === poolWalletDataId) || null;
+    setSsPool(pool);
+    setSsTokensEdit((pool?.tokenAddresses || []).join("\n"));
+    setShowTokenEdit(false);
+  };
+
   // ── Solscan: fetch transfers ──────────────────────────────────────────────
   const fetchSolscanTransfers = async () => {
-    if (!ssWallet) { setSsError("Please select a wallet."); return; }
+    if (!ssPoolId) { setSsError("Please select a pool."); return; }
     setSsLoading(true);
     setSsError("");
     setSsData(null);
     try {
       const r = await ADMIN_API.AUDIT_SOLSCAN_GET_TRANSFERS({
-        walletAddress: ssWallet,
+        poolWalletDataId: ssPoolId,
         startDate: ssStartDate,
         endDate: ssEndDate,
       });
       if (r?.data?.success) setSsData(r.data);
       else setSsError(r?.data?.message || "Fetch failed");
     } catch (e) {
-      setSsError(e?.response?.data?.message || "Solscan fetch failed. Check API key / wallet.");
+      setSsError(e?.response?.data?.message || "Solscan fetch failed. Check API key / pool.");
     } finally {
       setSsLoading(false);
     }
@@ -222,26 +228,30 @@ const AuditExport = () => {
       );
       XLSX.utils.book_append_sheet(wb, sumsSheet, "Sums");
 
-      const wallet = ssWallet.slice(0, 8);
-      XLSX.writeFile(wb, `Solscan_${wallet}_${ssStartDate}_to_${ssEndDate}.xlsx`);
+      const poolLabel = (ssPool?.poolName || "pool").replace(/\s+/g, "_").slice(0, 20);
+      XLSX.writeFile(wb, `Solscan_${poolLabel}_${ssStartDate}_to_${ssEndDate}.xlsx`);
     } finally {
       setSsExporting(false);
     }
   };
 
-  // ── Solscan: save wallet config ───────────────────────────────────────────
-  const saveSolscanConfig = async () => {
-    if (!cfgWallet) return;
-    setCfgSaving(true);
+  // ── Solscan: save token addresses for selected pool ───────────────────────
+  const savePoolTokens = async () => {
+    if (!ssPoolId) return;
+    setSsTokensSaving(true);
     try {
-      const pairAddresses  = cfgPairs.split("\n").map(s => s.trim()).filter(Boolean);
-      const tokenAddresses = cfgTokens.split("\n").map(s => s.trim()).filter(Boolean);
-      await ADMIN_API.AUDIT_SOLSCAN_UPSERT_WALLET_CONFIG({ walletAddress: cfgWallet, label: cfgLabel, pairAddresses, tokenAddresses });
-      const r = await ADMIN_API.AUDIT_SOLSCAN_GET_WALLET_CONFIGS();
-      if (r?.data?.configs) setSsConfigs(r.data.configs);
-      setShowCfgEditor(false);
+      const tokenAddresses = ssTokensEdit.split("\n").map(s => s.trim()).filter(Boolean);
+      await ADMIN_API.AUDIT_SOLSCAN_SAVE_POOL_TOKENS({ poolWalletDataId: ssPoolId, tokenAddresses });
+      // Refresh pool list
+      const r = await ADMIN_API.AUDIT_SOLSCAN_GET_POOLS();
+      if (r?.data?.pools) {
+        setSsPools(r.data.pools);
+        const updated = r.data.pools.find(p => p._id === ssPoolId);
+        if (updated) setSsPool(updated);
+      }
+      setShowTokenEdit(false);
     } catch { /* ignore */ }
-    finally { setCfgSaving(false); }
+    finally { setSsTokensSaving(false); }
   };
 
   // ── Excel export ──────────────────────────────────────────────────────────
@@ -483,21 +493,23 @@ const AuditExport = () => {
       {activeTab === "solscan" && (
         <div className="space-y-4">
 
-          {/* Solscan controls row */}
+          {/* Controls */}
           <div className="bg-[#0f172a] border border-[#1e293b] rounded-xl p-4">
             <div className="flex flex-wrap gap-3 items-end">
-              <div className="flex flex-col gap-1">
-                <label className="text-xs text-gray-400">Wallet</label>
-                <select value={ssWallet} onChange={e => setSsWallet(e.target.value)}
-                  className="bg-[#1e293b] border border-[#2d3f55] rounded-lg px-3 py-2 text-sm text-white w-56 focus:outline-none focus:border-blue-500">
-                  <option value="">Select wallet…</option>
-                  {walletList.map(w => (
-                    <option key={w.walletAddress} value={w.walletAddress}>
-                      {ssConfigs.find(c => c.walletAddress === w.walletAddress)?.label || shortAddr(w.walletAddress)} ({w.status})
+              {/* Pool selector */}
+              <div className="flex flex-col gap-1 min-w-[220px]">
+                <label className="text-xs text-gray-400">Pool</label>
+                <select value={ssPoolId} onChange={e => handlePoolSelect(e.target.value)}
+                  className="bg-[#1e293b] border border-[#2d3f55] rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-blue-500">
+                  <option value="">Select pool…</option>
+                  {ssPools.map(p => (
+                    <option key={p._id} value={p._id}>
+                      {p.poolName}{p.poolType ? ` (${p.poolType.toUpperCase()})` : ""}
                     </option>
                   ))}
                 </select>
               </div>
+
               <div className="flex flex-col gap-1">
                 <label className="text-xs text-gray-400">Start Date</label>
                 <input type="date" value={ssStartDate} max={ssEndDate}
@@ -510,11 +522,13 @@ const AuditExport = () => {
                   onChange={e => setSsEndDate(e.target.value)}
                   className="bg-[#1e293b] border border-[#2d3f55] rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-blue-500" />
               </div>
-              <button onClick={fetchSolscanTransfers} disabled={ssLoading}
+
+              <button onClick={fetchSolscanTransfers} disabled={ssLoading || !ssPoolId}
                 className="flex items-center gap-1.5 px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-sm font-medium disabled:opacity-50 transition-colors">
                 {ssLoading ? <Loader2 size={14} className="animate-spin" /> : <Link size={14} />}
                 Fetch Transfers
               </button>
+
               {ssData && (
                 <button onClick={downloadSolscanExcel} disabled={ssExporting}
                   className="flex items-center gap-1.5 px-4 py-2 bg-green-600 hover:bg-green-500 text-white rounded-lg text-sm font-medium disabled:opacity-50 transition-colors">
@@ -522,11 +536,14 @@ const AuditExport = () => {
                   Download Excel
                 </button>
               )}
-              <button onClick={() => setShowCfgEditor(v => !v)}
-                className="flex items-center gap-1.5 px-3 py-2 bg-[#1e293b] hover:bg-[#273347] text-gray-300 rounded-lg text-sm transition-colors ml-auto">
-                <Settings size={14} />
-                Configure Filters
-              </button>
+
+              {ssPool && (
+                <button onClick={() => setShowTokenEdit(v => !v)}
+                  className="flex items-center gap-1.5 px-3 py-2 bg-[#1e293b] hover:bg-[#273347] text-gray-300 rounded-lg text-sm transition-colors ml-auto">
+                  <Settings size={14} />
+                  {showTokenEdit ? "Hide Token Config" : "Configure Tokens"}
+                </button>
+              )}
             </div>
 
             {ssError && (
@@ -535,87 +552,76 @@ const AuditExport = () => {
               </div>
             )}
 
-            {/* Config editor */}
-            {showCfgEditor && (
-              <div className="mt-4 pt-4 border-t border-[#1e293b]">
-                <p className="text-xs text-gray-400 mb-3 font-medium">
-                  Wallet Filter Configuration — set which counterparty addresses and tokens to include in the Filtered sheet (same as Python script logic).
-                </p>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-                  <div className="flex flex-col gap-1">
-                    <label className="text-xs text-gray-400">Wallet Address</label>
-                    <select value={cfgWallet} onChange={e => {
-                      setCfgWallet(e.target.value);
-                      const c = ssConfigs.find(x => x.walletAddress === e.target.value);
-                      setCfgLabel(c?.label || "");
-                      setCfgPairs((c?.pairAddresses || []).join("\n"));
-                      setCfgTokens((c?.tokenAddresses || []).join("\n"));
-                    }} className="bg-[#1e293b] border border-[#2d3f55] rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-blue-500">
-                      <option value="">Select wallet…</option>
-                      {walletList.map(w => (
-                        <option key={w.walletAddress} value={w.walletAddress}>{shortAddr(w.walletAddress)}</option>
-                      ))}
-                    </select>
-                  </div>
-                  <div className="flex flex-col gap-1">
-                    <label className="text-xs text-gray-400">Label (e.g. BUNDLE 5)</label>
-                    <input type="text" value={cfgLabel} onChange={e => setCfgLabel(e.target.value)} placeholder="BUNDLE 5"
-                      className="bg-[#1e293b] border border-[#2d3f55] rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-blue-500" />
-                  </div>
-                  <div className="flex flex-col gap-1">
-                    <label className="text-xs text-gray-400">Pair Addresses (one per line)</label>
-                    <textarea value={cfgPairs} onChange={e => setCfgPairs(e.target.value)} rows={4} placeholder={"GpMZbSM2...\nAnotherAddr..."}
-                      className="bg-[#1e293b] border border-[#2d3f55] rounded-lg px-3 py-2 text-sm text-white font-mono focus:outline-none focus:border-blue-500 resize-none" />
-                  </div>
-                  <div className="flex flex-col gap-1">
-                    <label className="text-xs text-gray-400">Token Addresses (one per line)</label>
-                    <textarea value={cfgTokens} onChange={e => setCfgTokens(e.target.value)} rows={4} placeholder={"So11111111...\nBjcRmwm8..."}
-                      className="bg-[#1e293b] border border-[#2d3f55] rounded-lg px-3 py-2 text-sm text-white font-mono focus:outline-none focus:border-blue-500 resize-none" />
-                  </div>
+            {/* Pool info — auto-derived from DB */}
+            {ssPool && (
+              <div className="mt-4 pt-4 border-t border-[#1e293b] grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
+                <div>
+                  <p className="text-gray-500 mb-1">Wallet Address (WALLET_ADDRESS)</p>
+                  <p className="font-mono text-blue-300 break-all">{ssPool.poolWalletAddress || "—"}</p>
                 </div>
-                <div className="flex gap-2 mt-3">
-                  <button onClick={saveSolscanConfig} disabled={!cfgWallet || cfgSaving}
+                <div>
+                  <p className="text-gray-500 mb-1">Inner Wallet (valid_addresses[1])</p>
+                  <p className="font-mono text-purple-300 break-all">{ssPool.innerWalletAddress || "—"}</p>
+                </div>
+                <div>
+                  <p className="text-gray-500 mb-1">Token Addresses (valid_tokens)</p>
+                  {(ssPool.tokenAddresses || []).length > 0 ? (
+                    <div className="flex flex-wrap gap-1">
+                      {ssPool.tokenAddresses.map(t => (
+                        <span key={t} className="font-mono bg-teal-500/10 text-teal-300 px-1.5 py-0.5 rounded break-all">{shortAddr(t)}</span>
+                      ))}
+                    </div>
+                  ) : (
+                    <span className="text-yellow-500">No tokens configured — all tokens included</span>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Token address editor */}
+            {showTokenEdit && ssPool && (
+              <div className="mt-4 pt-4 border-t border-[#1e293b]">
+                <p className="text-xs text-gray-400 mb-2 font-medium">
+                  Token Addresses (valid_tokens) — one per line. Leave empty to include all tokens.
+                </p>
+                <textarea value={ssTokensEdit} onChange={e => setSsTokensEdit(e.target.value)} rows={5}
+                  placeholder={"So11111111111111111111111111111111111111112\nBjcRmwm8e25RgjkyaFE56fc7bxRgGPw96JUkXRJFEroT"}
+                  className="w-full bg-[#1e293b] border border-[#2d3f55] rounded-lg px-3 py-2 text-sm text-white font-mono focus:outline-none focus:border-blue-500 resize-none" />
+                <div className="flex gap-2 mt-2">
+                  <button onClick={savePoolTokens} disabled={ssTokensSaving}
                     className="flex items-center gap-1.5 px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-sm disabled:opacity-50 transition-colors">
-                    {cfgSaving ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />}
-                    Save Config
+                    {ssTokensSaving ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />}
+                    Save Tokens
                   </button>
-                  <button onClick={() => setShowCfgEditor(false)}
+                  <button onClick={() => setShowTokenEdit(false)}
                     className="flex items-center gap-1.5 px-4 py-2 bg-[#1e293b] hover:bg-[#273347] text-gray-300 rounded-lg text-sm transition-colors">
                     <X size={14} />Cancel
                   </button>
                 </div>
-
-                {/* Saved configs list */}
-                {ssConfigs.length > 0 && (
-                  <div className="mt-4">
-                    <p className="text-xs text-gray-400 mb-2">Saved configurations:</p>
-                    <div className="flex flex-wrap gap-2">
-                      {ssConfigs.map(c => (
-                        <div key={c.walletAddress} className="flex items-center gap-2 bg-[#131f35] border border-[#1e293b] rounded-lg px-3 py-1.5 text-xs">
-                          <span className="text-white font-medium">{c.label || shortAddr(c.walletAddress)}</span>
-                          <span className="text-gray-500">{shortAddr(c.walletAddress)}</span>
-                          <span className="text-blue-400">{c.pairAddresses?.length} pairs</span>
-                          <span className="text-teal-400">{c.tokenAddresses?.length} tokens</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
               </div>
             )}
           </div>
 
-          {/* Solscan results */}
+          {/* Loading */}
           {ssLoading && (
             <div className="flex items-center justify-center py-16 bg-[#0f172a] border border-[#1e293b] rounded-xl">
               <Loader2 size={28} className="animate-spin text-blue-400 mr-3" />
-              <span className="text-gray-400 text-sm">Fetching from Solscan API…</span>
+              <span className="text-gray-400 text-sm">Fetching from Solscan API… (may take a moment for large ranges)</span>
             </div>
           )}
 
+          {/* Results */}
           {ssData && !ssLoading && (
             <div className="space-y-4">
-              {/* Stats row */}
+              {/* Pool + date info */}
+              <div className="flex flex-wrap items-center gap-3 text-xs text-gray-400">
+                <span className="text-white font-medium">{ssData.poolName}</span>
+                {ssData.poolType && <span className={`px-1.5 py-0.5 rounded font-medium ${POOL_TYPE_COLOR[ssData.poolType?.toLowerCase()] || "bg-gray-500/20 text-gray-400"}`}>{ssData.poolType.toUpperCase()}</span>}
+                <span>{ssData.startDate} → {ssData.endDate}</span>
+                <span className="text-gray-600">{ssData.meta?.generatedAt}</span>
+              </div>
+
+              {/* Stats cards */}
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                 <div className="bg-[#0f172a] border border-[#1e293b] rounded-xl p-4">
                   <p className="text-xs text-gray-400">Raw Records</p>
@@ -624,7 +630,6 @@ const AuditExport = () => {
                 <div className="bg-[#0f172a] border border-[#1e293b] rounded-xl p-4">
                   <p className="text-xs text-gray-400">Filtered Records</p>
                   <p className="text-2xl font-bold text-blue-400 mt-1">{ssData.meta?.filteredCount?.toLocaleString()}</p>
-                  {!ssData.config && <p className="text-xs text-yellow-500 mt-0.5">No filter config set</p>}
                 </div>
                 {ssData.sums?.map(s => (
                   <div key={s.case} className="bg-[#0f172a] border border-[#1e293b] rounded-xl p-4">

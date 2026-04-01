@@ -531,19 +531,19 @@ export const ADMIN_API = {
   },
 
   // ── Solscan Transfer Export ─────────────────────────────────────────────
-  AUDIT_SOLSCAN_GET_TRANSFERS: ({ walletAddress, startDate, endDate } = {}) => {
+  AUDIT_SOLSCAN_GET_POOLS: () =>
+    api.get(API_CONFIG.AUDIT_SOLSCAN_POOLS),
+
+  AUDIT_SOLSCAN_SAVE_POOL_TOKENS: ({ poolWalletDataId, tokenAddresses } = {}) =>
+    api.post(API_CONFIG.AUDIT_SOLSCAN_POOL_TOKENS, { poolWalletDataId, tokenAddresses }),
+
+  AUDIT_SOLSCAN_GET_TRANSFERS: ({ poolWalletDataId, startDate, endDate } = {}) => {
     const params = {};
-    if (walletAddress) params.walletAddress = walletAddress;
+    if (poolWalletDataId) params.poolWalletDataId = poolWalletDataId;
     if (startDate) params.startDate = startDate;
     if (endDate) params.endDate = endDate;
     return api.get(API_CONFIG.AUDIT_SOLSCAN_TRANSFERS, { params, timeout: 120000 });
   },
-
-  AUDIT_SOLSCAN_GET_WALLET_CONFIGS: () =>
-    api.get(API_CONFIG.AUDIT_SOLSCAN_WALLET_CONFIGS),
-
-  AUDIT_SOLSCAN_UPSERT_WALLET_CONFIG: ({ walletAddress, label, pairAddresses, tokenAddresses } = {}) =>
-    api.post(API_CONFIG.AUDIT_SOLSCAN_WALLET_CONFIG, { walletAddress, label, pairAddresses, tokenAddresses }),
 };
 
 export default api;
