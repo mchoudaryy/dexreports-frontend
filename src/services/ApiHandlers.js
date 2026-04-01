@@ -487,6 +487,79 @@ export const ADMIN_API = {
     console.log("[API] Sending ADMIN_UPDATE_COMPOUND_WALLET payload:", payload);
     return api.post(API_CONFIG.ADMIN_UPDATE_COMPOUND_WALLET, payload);
   },
+
+  // ─── Audit / Market Making Export ─────────────────────────────────────────
+
+  AUDIT_SYNC: ({ startDate, endDate, walletAddress } = {}) => {
+    const payload = { startDate, endDate };
+    if (walletAddress) payload.walletAddress = walletAddress;
+    return api.post(API_CONFIG.AUDIT_SYNC, payload);
+  },
+
+  AUDIT_GET_SUMMARY: ({ startDate, endDate, walletStatus, poolType } = {}) => {
+    const params = {};
+    if (startDate) params.startDate = startDate;
+    if (endDate) params.endDate = endDate;
+    if (walletStatus) params.walletStatus = walletStatus;
+    if (poolType) params.poolType = poolType;
+    return api.get(API_CONFIG.AUDIT_SUMMARY, { params });
+  },
+
+  AUDIT_GET_DATA: ({
+    startDate,
+    endDate,
+    walletStatus,
+    poolType,
+    walletAddress,
+    page = 1,
+    limit = 50,
+  } = {}) => {
+    const params = { page, limit };
+    if (startDate) params.startDate = startDate;
+    if (endDate) params.endDate = endDate;
+    if (walletStatus) params.walletStatus = walletStatus;
+    if (poolType) params.poolType = poolType;
+    if (walletAddress) params.walletAddress = walletAddress;
+    return api.get(API_CONFIG.AUDIT_DATA, { params });
+  },
+
+  AUDIT_EXPORT: ({
+    startDate,
+    endDate,
+    walletStatus,
+    poolType,
+    walletAddress,
+  } = {}) => {
+    const params = {};
+    if (startDate) params.startDate = startDate;
+    if (endDate) params.endDate = endDate;
+    if (walletStatus) params.walletStatus = walletStatus;
+    if (poolType) params.poolType = poolType;
+    if (walletAddress) params.walletAddress = walletAddress;
+    return api.get(API_CONFIG.AUDIT_EXPORT, { params, timeout: 120000 });
+  },
+
+  AUDIT_GET_TRANSACTIONS: ({
+    startDate,
+    endDate,
+    walletStatus,
+    poolType,
+    walletAddress,
+    page = 1,
+    limit = 100,
+  } = {}) => {
+    const params = { page, limit };
+    if (startDate) params.startDate = startDate;
+    if (endDate) params.endDate = endDate;
+    if (walletStatus) params.walletStatus = walletStatus;
+    if (poolType) params.poolType = poolType;
+    if (walletAddress) params.walletAddress = walletAddress;
+    return api.get(API_CONFIG.AUDIT_TRANSACTIONS, { params });
+  },
+
+  AUDIT_SYNC_STATUS: () => api.get(API_CONFIG.AUDIT_SYNC_STATUS),
+
+  AUDIT_GET_WALLETS: () => api.get(API_CONFIG.AUDIT_WALLETS),
 };
 
 export default api;

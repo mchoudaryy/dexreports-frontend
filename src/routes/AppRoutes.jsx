@@ -30,6 +30,7 @@ import RWADetails from "../pages/RWADetails";
 import Walletsdata from "../pages/Admin/Walletsdata";
 import Poolswalletdata from "../pages/Admin/Poolswalletdata";
 import PoolsWalletsData from "../pages/Admin/PoolsWalletsData";
+import AuditExport from "../pages/AuditExport";
 
 // Component to redirect authenticated users away from auth pages
 const PublicRoute = ({ children }) => {
@@ -309,6 +310,17 @@ const AppRoutes = () => {
             <ProtectedRoute>
               <DashboardLayout>
                 <PoolDetails />
+              </DashboardLayout>
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/audit-export"
+          element={
+            <ProtectedRoute>
+              <DashboardLayout>
+                <AuditExport />
               </DashboardLayout>
             </ProtectedRoute>
           }
