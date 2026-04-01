@@ -1,4 +1,4 @@
-import { LayoutDashboard, TrendingUp, Navigation, Layers, LineChart, FileSpreadsheet } from "lucide-react";
+import { LayoutDashboard, TrendingUp, Navigation, Layers, LineChart } from "lucide-react";
 
 export const sidebarMenu = [
   {
@@ -35,10 +35,5 @@ export const sidebarMenu = [
     title: "Idlemine Stats",
     icon: <LineChart size={20} />,
     externalUrl: "https://stats.idlemine.io/",
-  },
-  {
-    title: "Audit Export",
-    icon: <FileSpreadsheet size={20} />,
-    path: "/audit-export",
   },
 ];
