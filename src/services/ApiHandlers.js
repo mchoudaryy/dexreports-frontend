@@ -512,6 +512,24 @@ export const ADMIN_API = {
 
   AUDIT_SAVE_TOKEN_PRICE: (data) =>
     api.post(API_CONFIG.AUDIT_SAVE_TOKEN_PRICE, data),
+
+  // ── Swap Wallet Export ─────────────────────────────────────────────────────
+  AUDIT_GET_SWAP_POOLS: ({ poolType } = {}) => {
+    const params = {};
+    if (poolType && poolType !== 'all') params.poolType = poolType;
+    return api.get(API_CONFIG.AUDIT_GET_SWAP_POOLS, { params });
+  },
+
+  AUDIT_GET_SWAP_WALLETS: ({ pairAddress } = {}) =>
+    api.get(API_CONFIG.AUDIT_GET_SWAP_WALLETS, { params: { pairAddress } }),
+
+  AUDIT_GET_SWAP_TRANSFERS: ({ walletId, startDate, endDate } = {}) => {
+    const params = {};
+    if (walletId) params.walletId = walletId;
+    if (startDate) params.startDate = startDate;
+    if (endDate) params.endDate = endDate;
+    return api.get(API_CONFIG.AUDIT_GET_SWAP_TRANSFERS, { params });
+  },
 };
 
 export default api;
