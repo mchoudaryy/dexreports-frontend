@@ -510,6 +510,9 @@ export const ADMIN_API = {
     return api.get(API_CONFIG.AUDIT_GET_TOKEN_PRICES, { params });
   },
 
+  AUDIT_GET_ALL_TOKEN_PRICES: ({ date } = {}) =>
+    api.get(API_CONFIG.AUDIT_GET_ALL_TOKEN_PRICES, { params: { date } }),
+
   AUDIT_SAVE_TOKEN_PRICE: (data) =>
     api.post(API_CONFIG.AUDIT_SAVE_TOKEN_PRICE, data),
 
