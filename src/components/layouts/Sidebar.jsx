@@ -1,7 +1,7 @@
 // Sidebar.jsx
 import { useState, useEffect, useMemo } from "react";
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
-import { ChevronDown, ChevronUp, Network, X, Wallet, LogOut, Coins, Users, Settings, Layers } from "lucide-react";
+import { ChevronDown, ChevronUp, Network, X, Wallet, LogOut, Coins, Users, Settings, Layers, FileSpreadsheet } from "lucide-react";
 import clsx from "clsx";
 import { sidebarMenu } from "./sidebarMenu";
 import { ADMIN_API } from "../../services/ApiHandlers";
@@ -150,10 +150,20 @@ export const Sidebar = ({ sidebarOpen, setSidebarOpen }) => {
           }
         : null;
 
+    const auditMenuItem =
+      user?.role?.toLowerCase() === "superadmin"
+        ? {
+            title: "Wallet Audit",
+            icon: <FileSpreadsheet size={20} />,
+            path: "/audit",
+          }
+        : null;
+
     const newMenu = [
       ...sidebarMenu.slice(0, 3), // Dashboard, Tollgate Pools, Cross Engine Pools
       ...(networksMenuItem ? [networksMenuItem] : []),
       ...(tokensMenuItem ? [tokensMenuItem] : []),
+      ...(auditMenuItem ? [auditMenuItem] : []),
       ...(adminMenuItem ? [adminMenuItem] : []),
       ...sidebarMenu.slice(3),
     ];
