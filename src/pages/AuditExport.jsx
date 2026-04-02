@@ -26,15 +26,28 @@ function statusBadge(status) {
   return "bg-yellow-100 text-yellow-700 border border-yellow-300";
 }
 
-/** Build Excel workbook — single DeFi_Activities sheet matching Solscan web export format */
-function buildExcel(rows, walletAddress, date, poolName) {
+/**
+ * Build 3-sheet Excel matching the Python script output:
+ *   Sheet 1: Raw_Data   — all Solscan transfer records
+ *   Sheet 2: Filtered   — records filtered by valid_addresses + valid_tokens
+ *   Sheet 3: Sums       — in/out balance totals per token
+ */
+function buildExcel(raw, filtered, sums, walletAddress, date, poolName) {
   const wb = XLSX.utils.book_new();
-  const ws = XLSX.utils.json_to_sheet(rows.length ? rows : [{}]);
-  XLSX.utils.book_append_sheet(wb, ws, "DeFi_Activities");
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(raw.length ? raw : [{}]), "Raw_Data");
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(filtered.length ? filtered : [{}]), "Filtered");
 
-  const filename = `defi_activities_${date}_${poolName}_${shortAddr(walletAddress)}.xlsx`
+  const sumsRows = sums.map((s) => ({
+    Case:          s.case,
+    Token_Address: s.token_address,
+    Token_Symbol:  s.token_symbol,
+    Flow:          s.flow,
+    Balance_Sum:   s.balance_sum,
+  }));
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(sumsRows.length ? sumsRows : [{}]), "Sums");
+
+  const filename = `${date}_${poolName}_${shortAddr(walletAddress)}.xlsx`
     .replace(/[^a-zA-Z0-9._-]/g, "_");
-
   XLSX.writeFile(wb, filename);
 }
 
@@ -110,20 +123,20 @@ export default function AuditExport() {
     }
   }
 
-  // ── Download single wallet — fetches ALL DeFi activity pages ─────────────
+  // ── Download single wallet — Raw_Data / Filtered / Sums (matches Python script) ──
   async function downloadWallet(wallet) {
     const id = wallet._id;
     setDlState((s) => ({ ...s, [id]: "loading" }));
     try {
-      const res = await ADMIN_API.AUDIT_GET_DEFI_ACTIVITIES({
+      const res = await ADMIN_API.AUDIT_GET_SWAP_TRANSFERS({
         walletId:  id,
         startDate: date,
         endDate:   date,
       });
-      const { rows, poolName, walletAddress } = res.data;
-      buildExcel(rows, walletAddress || wallet.walletAddress, date, poolName || wallet.symbol);
+      const { raw, filtered, sums, poolName, walletAddress } = res.data;
+      buildExcel(raw, filtered, sums, walletAddress || wallet.walletAddress, date, poolName || wallet.symbol);
       setDlState((s) => ({ ...s, [id]: "done" }));
-      toast.success(`Downloaded ${rows.length} records: ${shortAddr(wallet.walletAddress)}`);
+      toast.success(`Downloaded ${raw.length} records — ${shortAddr(wallet.walletAddress)}`);
     } catch {
       setDlState((s) => ({ ...s, [id]: "error" }));
       toast.error(`Failed: ${shortAddr(wallet.walletAddress)}`);
