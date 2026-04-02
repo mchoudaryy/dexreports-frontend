@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo, Component } from "react";
 import * as XLSX from "xlsx";
-import { ADMIN_API } from "../services/ApiHandlers";
+import api, { ADMIN_API } from "../services/ApiHandlers";
+import { API_CONFIG } from "../services/ApiConfig";
 import {
   FileSpreadsheet, Download, AlertCircle, CheckCircle2,
   Loader2, DollarSign, RefreshCw, Save,
@@ -270,7 +271,7 @@ function TokenPricesTab() {
   // When date or tokens change, load stored prices from DB
   useEffect(() => {
     if (!allTokens.length) return;
-    ADMIN_API.AUDIT_GET_ALL_TOKEN_PRICES({ date })
+    api.get(API_CONFIG.AUDIT_GET_ALL_TOKEN_PRICES, { params: { date } })
       .then((res) => {
         const map = {};
         for (const p of res.data?.prices || []) {
