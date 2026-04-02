@@ -281,7 +281,6 @@ export default function AuditExport() {
                 <tr className="text-left text-xs text-gray-500 border-b border-gray-200 bg-gray-50">
                   <th className="px-4 py-2">#</th>
                   <th className="px-4 py-2">Wallet Address</th>
-                  <th className="px-4 py-2">Inner Wallet</th>
                   <th className="px-4 py-2">Status</th>
                   <th className="px-4 py-2">Token</th>
                   <th className="px-4 py-2">Action</th>
@@ -295,9 +294,6 @@ export default function AuditExport() {
                       <td className="px-4 py-3 text-gray-400 text-xs">{i + 1}</td>
                       <td className="px-4 py-3 font-mono text-xs text-blue-600">
                         {shortAddr(w.walletAddress)}
-                      </td>
-                      <td className="px-4 py-3 font-mono text-xs text-gray-400">
-                        {w.innerWalletAddress ? shortAddr(w.innerWalletAddress) : "—"}
                       </td>
                       <td className="px-4 py-3">
                         <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${statusBadge(w.status)}`}>
