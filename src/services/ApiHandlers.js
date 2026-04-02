@@ -487,6 +487,31 @@ export const ADMIN_API = {
     console.log("[API] Sending ADMIN_UPDATE_COMPOUND_WALLET payload:", payload);
     return api.post(API_CONFIG.ADMIN_UPDATE_COMPOUND_WALLET, payload);
   },
+
+  // ── Wallet Audit / Solscan Export ─────────────────────────────────────────
+  AUDIT_GET_SOLSCAN_POOLS: () =>
+    api.get(API_CONFIG.AUDIT_GET_SOLSCAN_POOLS),
+
+  AUDIT_GET_SOLSCAN_TRANSFERS: ({ poolWalletDataId, startDate, endDate } = {}) => {
+    const params = {};
+    if (poolWalletDataId) params.poolWalletDataId = poolWalletDataId;
+    if (startDate) params.startDate = startDate;
+    if (endDate) params.endDate = endDate;
+    return api.get(API_CONFIG.AUDIT_GET_SOLSCAN_TRANSFERS, { params });
+  },
+
+  AUDIT_SAVE_POOL_TOKENS: (data) =>
+    api.post(API_CONFIG.AUDIT_SAVE_POOL_TOKENS, data),
+
+  AUDIT_GET_TOKEN_PRICES: ({ date, tokenAddresses } = {}) => {
+    const params = {};
+    if (date) params.date = date;
+    if (tokenAddresses) params.tokenAddresses = tokenAddresses;
+    return api.get(API_CONFIG.AUDIT_GET_TOKEN_PRICES, { params });
+  },
+
+  AUDIT_SAVE_TOKEN_PRICE: (data) =>
+    api.post(API_CONFIG.AUDIT_SAVE_TOKEN_PRICE, data),
 };
 
 export default api;

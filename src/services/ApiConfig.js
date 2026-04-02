@@ -4,6 +4,7 @@ const BASE_URL = import.meta.env.VITE_API_URL;
 const auth = `${BASE_URL}/api/auth`;
 const admin = `${BASE_URL}/api/admin`;
 const main = `${BASE_URL}/api/v1/main`;
+const audit = `${BASE_URL}/api/v1/audit`;
 
 export const API_CONFIG = {
   // Auth endpoints
@@ -95,5 +96,12 @@ export const API_CONFIG = {
   ADMIN_GET_SETTINGS: `${admin}/getSettings`,
 
   ADMIN_GET_WALLETS: `${admin}/getWallets`,
+
+  // ── Wallet Audit / Solscan Export ─────────────────────────────────────────
+  AUDIT_GET_SOLSCAN_POOLS:     `${audit}/solscan/pools`,
+  AUDIT_GET_SOLSCAN_TRANSFERS: `${audit}/solscan/transfers`,
+  AUDIT_SAVE_POOL_TOKENS:      `${audit}/solscan/pool-tokens`,
+  AUDIT_GET_TOKEN_PRICES:      `${audit}/token-prices`,
+  AUDIT_SAVE_TOKEN_PRICE:      `${audit}/token-prices`,
 
 };
