@@ -101,6 +101,8 @@ export const API_CONFIG = {
   AUDIT_GET_SOLSCAN_POOLS:     `${audit}/solscan/pools`,
   AUDIT_GET_SOLSCAN_TRANSFERS: `${audit}/solscan/transfers`,
   AUDIT_SAVE_POOL_TOKENS:      `${audit}/solscan/pool-tokens`,
+  AUDIT_GET_PRICE_TOKENS:         `${audit}/price-tokens`,
+  AUDIT_ADD_PRICE_TOKEN:          `${audit}/price-tokens`,
   AUDIT_GET_TOKEN_LIST:           `${audit}/token-list`,
   AUDIT_GET_TOKEN_PRICES:         `${audit}/token-prices`,
   AUDIT_GET_ALL_TOKEN_PRICES:     `${audit}/token-prices/all`,
