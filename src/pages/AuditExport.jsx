@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, Component } from "react";
 import * as XLSX from "xlsx";
 import { ADMIN_API } from "../services/ApiHandlers";
 import {
@@ -6,6 +6,26 @@ import {
   Loader2, DollarSign, RefreshCw, Save,
 } from "lucide-react";
 import toast from "react-hot-toast";
+
+class TabErrorBoundary extends Component {
+  constructor(props) { super(props); this.state = { error: null }; }
+  static getDerivedStateFromError(err) { return { error: err }; }
+  render() {
+    if (this.state.error) {
+      return (
+        <div className="p-6 rounded-xl border border-red-200 bg-red-50 text-red-700 text-sm">
+          <p className="font-semibold mb-1">Error loading tab</p>
+          <pre className="text-xs whitespace-pre-wrap">{this.state.error?.message}</pre>
+          <button onClick={() => this.setState({ error: null })}
+            className="mt-3 px-3 py-1 text-xs bg-red-100 border border-red-300 rounded hover:bg-red-200">
+            Retry
+          </button>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
 
 const SOL_MINT = "So11111111111111111111111111111111111111112";
 
@@ -501,8 +521,10 @@ export default function AuditExport() {
         ))}
       </div>
 
-      {tab === "download" && <WalletDownloadTab />}
-      {tab === "prices"   && <TokenPricesTab />}
+      <TabErrorBoundary key={tab}>
+        {tab === "download" && <WalletDownloadTab />}
+        {tab === "prices"   && <TokenPricesTab />}
+      </TabErrorBoundary>
     </div>
   );
 }
