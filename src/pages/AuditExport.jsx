@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, Component } from "react";
+import { useState, useEffect, Component } from "react";
 import * as XLSX from "xlsx";
 import api, { ADMIN_API } from "../services/ApiHandlers";
 import { API_CONFIG } from "../services/ApiConfig";
@@ -233,99 +233,58 @@ function WalletDownloadTab() {
 // ═══════════════════════════════════════════════════════════════════════════════
 
 function TokenPricesTab() {
-  const [date, setDate]         = useState(yesterday);
-  const [allPools, setAllPools] = useState([]);
-  const [loading, setLoading]   = useState(true);
-  // priceMap: { tokenAddress: { symbol, poolType, avgPrice, priceSource, dirty } }
+  const [date, setDate]       = useState(yesterday);
+  const [tokens, setTokens]   = useState([]);   // all tokens from Token collection
+  const [loading, setLoading] = useState(true);
+  // priceMap: { tokenAddress: { avgPrice, priceSource, dirty } }
   const [priceMap, setPriceMap] = useState({});
-  const [fetchingAll, setFetchingAll] = useState(false);
-  // savingMap: { tokenAddress: boolean }
-  const [savingMap, setSavingMap] = useState({});
+  const [fetchingSol, setFetchingSol] = useState(false);
+  const [savingMap, setSavingMap]     = useState({});
 
-  // Unique tokens across all pools: [{ tokenAddress, symbol, poolType }]
-  const allTokens = useMemo(() => {
-    const seen = new Set();
-    const result = [];
-    for (const p of allPools) {
-      for (const addr of [p.tokenAddress, p.solAddress].filter(Boolean)) {
-        if (seen.has(addr)) continue;
-        seen.add(addr);
-        result.push({
-          tokenAddress: addr,
-          symbol: addr === SOL_MINT ? "SOL" : (addr === p.tokenAddress ? p.symbol : "SOL"),
-          poolType: p.poolType || "",
-        });
-      }
-    }
-    return result;
-  }, [allPools]);
-
-  // Load all pools on mount
+  // Load all tokens once on mount
   useEffect(() => {
-    ADMIN_API.AUDIT_GET_SWAP_POOLS({})
-      .then((res) => setAllPools(res.data?.pools || []))
-      .catch(() => toast.error("Failed to load pools"))
+    api.get(API_CONFIG.AUDIT_GET_TOKEN_LIST)
+      .then((res) => setTokens(res.data?.tokens || []))
+      .catch(() => toast.error("Failed to load token list"))
       .finally(() => setLoading(false));
   }, []);
 
-  // When date or tokens change, load stored prices from DB
+  // Load stored prices from DB whenever date changes
   useEffect(() => {
-    if (!allTokens.length) return;
     api.get(API_CONFIG.AUDIT_GET_ALL_TOKEN_PRICES, { params: { date } })
       .then((res) => {
         const map = {};
         for (const p of res.data?.prices || []) {
-          map[p.tokenAddress] = {
-            avgPrice:    p.avgPrice,
-            priceSource: p.priceSource || "manual",
-            dirty:       false,
-          };
+          map[p.tokenAddress] = { avgPrice: p.avgPrice, priceSource: p.priceSource || "manual", dirty: false };
         }
         setPriceMap(map);
       })
       .catch(() => {});
-  }, [date, allTokens.length]);
+  }, [date]);
 
-  // Fetch price for a single token (auto)
-  async function fetchOnePrice(tokenAddress) {
+  // Fetch SOL price from CoinGecko (only SOL is auto-fetchable)
+  async function fetchSolPrice() {
+    setFetchingSol(true);
     try {
-      const res = await ADMIN_API.AUDIT_GET_TOKEN_PRICES({ date, tokenAddresses: tokenAddress });
+      const res = await ADMIN_API.AUDIT_GET_TOKEN_PRICES({ date, tokenAddresses: SOL_MINT });
       const p = res.data?.prices?.[0];
       if (p && p.avgPrice != null) {
         setPriceMap((prev) => ({
           ...prev,
-          [tokenAddress]: { avgPrice: p.avgPrice, priceSource: p.priceSource || "solscan", dirty: false },
+          [SOL_MINT]: { avgPrice: p.avgPrice, priceSource: p.priceSource || "coingecko", dirty: false },
         }));
+        toast.success(`SOL: $${p.avgPrice}`);
+      } else {
+        toast.error("SOL price not available for this date");
       }
     } catch {
-      toast.error(`Failed to fetch price for ${shortAddr(tokenAddress)}`);
-    }
-  }
-
-  // Fetch all non-RWA token prices at once
-  async function fetchAllPrices() {
-    const nonRwa = allTokens.filter((t) => t.poolType.toLowerCase() !== "rwa" || t.tokenAddress === SOL_MINT);
-    if (!nonRwa.length) return;
-    setFetchingAll(true);
-    try {
-      const addrs = nonRwa.map((t) => t.tokenAddress).join(",");
-      const res = await ADMIN_API.AUDIT_GET_TOKEN_PRICES({ date, tokenAddresses: addrs });
-      const map = { ...priceMap };
-      for (const p of res.data?.prices || []) {
-        if (p.avgPrice != null) {
-          map[p.tokenAddress] = { avgPrice: p.avgPrice, priceSource: p.priceSource || "solscan", dirty: false };
-        }
-      }
-      setPriceMap(map);
-      toast.success("Prices refreshed");
-    } catch {
-      toast.error("Failed to fetch prices");
+      toast.error("Failed to fetch SOL price");
     } finally {
-      setFetchingAll(false);
+      setFetchingSol(false);
     }
   }
 
-  // Handle manual price input change (marks as dirty, not yet saved)
+  // Handle manual price input
   function handleInput(tokenAddress, value) {
     setPriceMap((prev) => ({
       ...prev,
@@ -338,7 +297,7 @@ function TokenPricesTab() {
     }));
   }
 
-  // Save a single token price
+  // Save single token price to DB
   async function savePrice(token) {
     const entry = priceMap[token.tokenAddress];
     if (!entry || entry.avgPrice == null || isNaN(entry.avgPrice)) {
@@ -357,7 +316,7 @@ function TokenPricesTab() {
         ...prev,
         [token.tokenAddress]: { ...prev[token.tokenAddress], priceSource: "manual", dirty: false },
       }));
-      toast.success(`Saved ${token.symbol} price`);
+      toast.success(`Saved ${token.symbol}`);
     } catch {
       toast.error(`Failed to save ${token.symbol}`);
     } finally {
@@ -365,41 +324,50 @@ function TokenPricesTab() {
     }
   }
 
-  const isRwa = (poolType) => (poolType || "").toLowerCase() === "rwa";
+  // Save all dirty prices at once
+  async function saveAll() {
+    const dirty = tokens.filter((t) => priceMap[t.tokenAddress]?.dirty && priceMap[t.tokenAddress]?.avgPrice != null);
+    if (!dirty.length) { toast("No unsaved changes"); return; }
+    for (const t of dirty) await savePrice(t);
+  }
+
+  const dirtyCount = tokens.filter((t) => priceMap[t.tokenAddress]?.dirty).length;
 
   return (
     <div>
-      {/* Date + Fetch All */}
-      <div className="flex items-end gap-4 mb-4">
+      {/* Controls row */}
+      <div className="flex flex-wrap items-end gap-3 mb-4">
         <div>
           <label className="block text-xs font-medium text-gray-500 mb-1">Date</label>
           <input type="date" value={date} max={yesterday()}
             onChange={(e) => setDate(e.target.value)}
             className="border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-800 focus:outline-none focus:border-blue-500 bg-white" />
         </div>
-        <button onClick={fetchAllPrices} disabled={fetchingAll || loading}
-          className="flex items-center gap-2 border border-blue-300 text-blue-600 hover:bg-blue-50 disabled:opacity-50 text-sm font-medium px-4 py-2 rounded-lg transition-colors bg-white">
-          {fetchingAll ? <Loader2 size={14} className="animate-spin" /> : <RefreshCw size={14} />}
-          Fetch All (CoinGecko / Solscan)
+        <button onClick={fetchSolPrice} disabled={fetchingSol || loading}
+          className="flex items-center gap-2 border border-orange-300 text-orange-600 hover:bg-orange-50 disabled:opacity-50 text-sm font-medium px-4 py-2 rounded-lg transition-colors bg-white">
+          {fetchingSol ? <Loader2 size={14} className="animate-spin" /> : <RefreshCw size={14} />}
+          Fetch SOL (CoinGecko)
         </button>
+        {dirtyCount > 0 && (
+          <button onClick={saveAll}
+            className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors">
+            <Save size={14} /> Save All ({dirtyCount})
+          </button>
+        )}
       </div>
 
       {/* Token Price Table */}
       <div className="border border-gray-200 rounded-xl overflow-hidden bg-white shadow-sm">
-        <div className="px-4 py-3 border-b border-gray-200 bg-gray-50">
-          <span className="text-sm font-semibold text-gray-700">
-            Token Prices — {date}
-          </span>
-          <span className="ml-2 text-xs text-gray-400">
-            RWA tokens require manual entry · Others auto-fetch from CoinGecko / Solscan
-          </span>
+        <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200 bg-gray-50">
+          <span className="text-sm font-semibold text-gray-700">Token Prices — {date}</span>
+          <span className="text-xs text-gray-400">Enter prices manually · SOL auto-fetches from CoinGecko</span>
         </div>
 
         {loading ? (
           <div className="flex items-center justify-center gap-2 text-gray-400 text-sm py-10">
             <Loader2 size={16} className="animate-spin" /> Loading tokens…
           </div>
-        ) : allTokens.length === 0 ? (
+        ) : tokens.length === 0 ? (
           <div className="flex items-center gap-2 text-gray-400 text-sm p-6">
             <AlertCircle size={16} /> No tokens found.
           </div>
@@ -410,29 +378,24 @@ function TokenPricesTab() {
                 <th className="px-4 py-2">#</th>
                 <th className="px-4 py-2">Token</th>
                 <th className="px-4 py-2">Address</th>
-                <th className="px-4 py-2">Pool Type</th>
                 <th className="px-4 py-2">Source</th>
                 <th className="px-4 py-2">Avg Price (USD)</th>
                 <th className="px-4 py-2">Action</th>
               </tr>
             </thead>
             <tbody>
-              {allTokens.map((token, i) => {
-                const entry   = priceMap[token.tokenAddress] || {};
-                const rwa     = isRwa(token.poolType) && token.tokenAddress !== SOL_MINT;
-                const saving  = savingMap[token.tokenAddress] || false;
+              {tokens.map((token, i) => {
+                const addr  = token.tokenAddress || token.solAddress || "";
+                const entry = priceMap[addr] || {};
+                const isSol = addr === SOL_MINT;
+                const saving = savingMap[addr] || false;
                 const hasPrice = entry.avgPrice != null && !isNaN(entry.avgPrice);
 
                 return (
-                  <tr key={token.tokenAddress} className="border-b border-gray-100 hover:bg-gray-50 transition-colors">
+                  <tr key={addr || i} className="border-b border-gray-100 hover:bg-gray-50 transition-colors">
                     <td className="px-4 py-3 text-gray-400 text-xs">{i + 1}</td>
                     <td className="px-4 py-3 font-semibold text-gray-700 text-xs">{token.symbol}</td>
-                    <td className="px-4 py-3 font-mono text-xs text-gray-400">{shortAddr(token.tokenAddress)}</td>
-                    <td className="px-4 py-3">
-                      <span className={`text-xs px-2 py-0.5 rounded font-medium ${rwa ? "bg-purple-100 text-purple-700" : "bg-blue-100 text-blue-700"}`}>
-                        {(token.poolType || "—").toUpperCase()}
-                      </span>
-                    </td>
+                    <td className="px-4 py-3 font-mono text-xs text-gray-400">{shortAddr(addr)}</td>
                     <td className="px-4 py-3">
                       {hasPrice ? (
                         <span className={`text-xs px-2 py-0.5 rounded font-medium ${sourceBadge(entry.priceSource)}`}>
@@ -447,25 +410,25 @@ function TokenPricesTab() {
                         <span className="text-gray-400 text-xs">$</span>
                         <input
                           type="number" min="0" step="any"
-                          placeholder={rwa ? "Enter manually" : "Auto-fetch"}
+                          placeholder="0.00"
                           value={entry.avgPrice ?? ""}
-                          onChange={(e) => handleInput(token.tokenAddress, e.target.value)}
+                          onChange={(e) => handleInput(addr, e.target.value)}
                           className={`w-36 border rounded px-2 py-1 text-xs text-gray-800 focus:outline-none focus:border-blue-500 bg-white ${entry.dirty ? "border-orange-400" : "border-gray-300"}`}
                         />
                       </div>
                     </td>
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-2">
-                        {/* Save button */}
-                        <button onClick={() => savePrice(token)} disabled={saving || !entry.dirty}
+                        <button
+                          onClick={() => savePrice({ ...token, tokenAddress: addr })}
+                          disabled={saving || !entry.dirty}
                           className="flex items-center gap-1 border border-green-300 text-green-600 hover:bg-green-50 disabled:opacity-40 text-xs px-2 py-1 rounded transition-colors bg-white">
                           {saving ? <Loader2 size={11} className="animate-spin" /> : <Save size={11} />}
                           Save
                         </button>
-                        {/* Fetch button (non-RWA only) */}
-                        {!rwa && (
-                          <button onClick={() => fetchOnePrice(token.tokenAddress)}
-                            className="flex items-center gap-1 border border-gray-300 text-gray-500 hover:border-blue-400 hover:text-blue-600 text-xs px-2 py-1 rounded transition-colors bg-white">
+                        {isSol && (
+                          <button onClick={fetchSolPrice} disabled={fetchingSol}
+                            className="flex items-center gap-1 border border-orange-300 text-orange-500 hover:bg-orange-50 disabled:opacity-40 text-xs px-2 py-1 rounded transition-colors bg-white">
                             <RefreshCw size={11} /> Fetch
                           </button>
                         )}
