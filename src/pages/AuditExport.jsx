@@ -233,17 +233,21 @@ function WalletDownloadTab() {
 // ═══════════════════════════════════════════════════════════════════════════════
 
 function TokenPricesTab() {
-  const [date, setDate]       = useState(yesterday);
-  const [tokens, setTokens]   = useState([]);   // all tokens from Token collection
-  const [loading, setLoading] = useState(true);
-  // priceMap: { tokenAddress: { avgPrice, priceSource, dirty } }
-  const [priceMap, setPriceMap] = useState({});
+  const [date, setDate]         = useState(yesterday);
+  const [tokens, setTokens]     = useState([]);
+  const [loading, setLoading]   = useState(true);
+  const [priceMap, setPriceMap] = useState({});  // key = symbol (or tokenAddress for SOL)
   const [fetchingSol, setFetchingSol] = useState(false);
   const [savingMap, setSavingMap]     = useState({});
+  // Add token form
+  const [showAdd, setShowAdd]   = useState(false);
+  const [newSymbol, setNewSymbol] = useState("");
+  const [newName, setNewName]   = useState("");
+  const [adding, setAdding]     = useState(false);
 
-  // Load all tokens once on mount
+  // Load managed token list once on mount
   useEffect(() => {
-    api.get(API_CONFIG.AUDIT_GET_TOKEN_LIST)
+    api.get(API_CONFIG.AUDIT_GET_PRICE_TOKENS)
       .then((res) => setTokens(res.data?.tokens || []))
       .catch(() => toast.error("Failed to load token list"))
       .finally(() => setLoading(false));
@@ -255,14 +259,21 @@ function TokenPricesTab() {
       .then((res) => {
         const map = {};
         for (const p of res.data?.prices || []) {
-          map[p.tokenAddress] = { avgPrice: p.avgPrice, priceSource: p.priceSource || "manual", dirty: false };
+          // key is tokenAddress if set, else symbol
+          const key = p.tokenAddress || p.symbol;
+          map[key] = { avgPrice: p.avgPrice, priceSource: p.priceSource || "manual", dirty: false };
         }
         setPriceMap(map);
       })
       .catch(() => {});
   }, [date]);
 
-  // Fetch SOL price from CoinGecko (only SOL is auto-fetchable)
+  // key used to store/look up a token's price (tokenAddress if available, else symbol)
+  function priceKey(token) {
+    return token.tokenAddress || token.symbol;
+  }
+
+  // Fetch SOL price from CoinGecko
   async function fetchSolPrice() {
     setFetchingSol(true);
     try {
@@ -271,9 +282,9 @@ function TokenPricesTab() {
       if (p && p.avgPrice != null) {
         setPriceMap((prev) => ({
           ...prev,
-          [SOL_MINT]: { avgPrice: p.avgPrice, priceSource: p.priceSource || "coingecko", dirty: false },
+          [SOL_MINT]: { avgPrice: p.avgPrice, priceSource: "coingecko", dirty: false },
         }));
-        toast.success(`SOL: $${p.avgPrice}`);
+        toast.success(`SOL: $${p.avgPrice.toFixed(4)}`);
       } else {
         toast.error("SOL price not available for this date");
       }
@@ -284,54 +295,65 @@ function TokenPricesTab() {
     }
   }
 
-  // Handle manual price input
-  function handleInput(tokenAddress, value) {
+  function handleInput(key, value) {
     setPriceMap((prev) => ({
       ...prev,
-      [tokenAddress]: {
-        ...(prev[tokenAddress] || {}),
-        avgPrice:    value === "" ? null : parseFloat(value),
-        priceSource: "manual",
-        dirty:       true,
-      },
+      [key]: { ...(prev[key] || {}), avgPrice: value === "" ? null : parseFloat(value), priceSource: "manual", dirty: true },
     }));
   }
 
-  // Save single token price to DB
   async function savePrice(token) {
-    const entry = priceMap[token.tokenAddress];
+    const key = priceKey(token);
+    const entry = priceMap[key];
     if (!entry || entry.avgPrice == null || isNaN(entry.avgPrice)) {
-      toast.error("Enter a valid price first");
-      return;
+      toast.error("Enter a valid price first"); return;
     }
-    setSavingMap((s) => ({ ...s, [token.tokenAddress]: true }));
+    setSavingMap((s) => ({ ...s, [key]: true }));
     try {
       await ADMIN_API.AUDIT_SAVE_TOKEN_PRICE({
         date,
-        tokenAddress: token.tokenAddress,
+        tokenAddress: token.tokenAddress || token.symbol,
         symbol: token.symbol,
         avgPrice: entry.avgPrice,
       });
-      setPriceMap((prev) => ({
-        ...prev,
-        [token.tokenAddress]: { ...prev[token.tokenAddress], priceSource: "manual", dirty: false },
-      }));
+      setPriceMap((prev) => ({ ...prev, [key]: { ...prev[key], dirty: false } }));
       toast.success(`Saved ${token.symbol}`);
     } catch {
       toast.error(`Failed to save ${token.symbol}`);
     } finally {
-      setSavingMap((s) => ({ ...s, [token.tokenAddress]: false }));
+      setSavingMap((s) => ({ ...s, [key]: false }));
     }
   }
 
-  // Save all dirty prices at once
   async function saveAll() {
-    const dirty = tokens.filter((t) => priceMap[t.tokenAddress]?.dirty && priceMap[t.tokenAddress]?.avgPrice != null);
+    const dirty = tokens.filter((t) => {
+      const e = priceMap[priceKey(t)];
+      return e?.dirty && e?.avgPrice != null;
+    });
     if (!dirty.length) { toast("No unsaved changes"); return; }
     for (const t of dirty) await savePrice(t);
   }
 
-  const dirtyCount = tokens.filter((t) => priceMap[t.tokenAddress]?.dirty).length;
+  async function handleAddToken(e) {
+    e.preventDefault();
+    if (!newSymbol.trim()) return;
+    setAdding(true);
+    try {
+      const res = await api.post(API_CONFIG.AUDIT_ADD_PRICE_TOKEN, {
+        symbol: newSymbol.trim().toUpperCase(),
+        name: newName.trim(),
+      });
+      setTokens((prev) => [...prev, res.data.token]);
+      setNewSymbol(""); setNewName(""); setShowAdd(false);
+      toast.success(`Added ${newSymbol.toUpperCase()}`);
+    } catch (err) {
+      toast.error(err?.response?.data?.message || "Failed to add token");
+    } finally {
+      setAdding(false);
+    }
+  }
+
+  const dirtyCount = tokens.filter((t) => priceMap[priceKey(t)]?.dirty).length;
 
   return (
     <div>
@@ -354,13 +376,45 @@ function TokenPricesTab() {
             <Save size={14} /> Save All ({dirtyCount})
           </button>
         )}
+        <button onClick={() => setShowAdd((v) => !v)}
+          className="ml-auto flex items-center gap-2 border border-gray-300 text-gray-600 hover:bg-gray-50 text-sm font-medium px-4 py-2 rounded-lg transition-colors bg-white">
+          + Add Token
+        </button>
       </div>
+
+      {/* Add Token form */}
+      {showAdd && (
+        <form onSubmit={handleAddToken}
+          className="flex items-end gap-3 mb-4 p-4 border border-blue-200 rounded-xl bg-blue-50">
+          <div>
+            <label className="block text-xs font-medium text-gray-500 mb-1">Symbol <span className="text-red-400">*</span></label>
+            <input value={newSymbol} onChange={(e) => setNewSymbol(e.target.value)}
+              placeholder="e.g. BONK" required
+              className="border border-gray-300 rounded-lg px-3 py-2 text-sm w-32 focus:outline-none focus:border-blue-500 bg-white" />
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-gray-500 mb-1">Name</label>
+            <input value={newName} onChange={(e) => setNewName(e.target.value)}
+              placeholder="e.g. Bonk"
+              className="border border-gray-300 rounded-lg px-3 py-2 text-sm w-40 focus:outline-none focus:border-blue-500 bg-white" />
+          </div>
+          <button type="submit" disabled={adding}
+            className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors">
+            {adding ? <Loader2 size={14} className="animate-spin" /> : null}
+            Add
+          </button>
+          <button type="button" onClick={() => setShowAdd(false)}
+            className="text-gray-400 hover:text-gray-600 text-sm px-3 py-2">
+            Cancel
+          </button>
+        </form>
+      )}
 
       {/* Token Price Table */}
       <div className="border border-gray-200 rounded-xl overflow-hidden bg-white shadow-sm">
         <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200 bg-gray-50">
           <span className="text-sm font-semibold text-gray-700">Token Prices — {date}</span>
-          <span className="text-xs text-gray-400">Enter prices manually · SOL auto-fetches from CoinGecko</span>
+          <span className="text-xs text-gray-400">Enter avg prices manually · Changes saved to DB per date</span>
         </div>
 
         {loading ? (
@@ -377,25 +431,26 @@ function TokenPricesTab() {
               <tr className="text-left text-xs text-gray-500 border-b border-gray-200 bg-gray-50">
                 <th className="px-4 py-2">#</th>
                 <th className="px-4 py-2">Token</th>
-                <th className="px-4 py-2">Address</th>
                 <th className="px-4 py-2">Source</th>
-                <th className="px-4 py-2">Avg Price (USD)</th>
+                <th className="px-4 py-2 w-52">Avg Price (USD)</th>
                 <th className="px-4 py-2">Action</th>
               </tr>
             </thead>
             <tbody>
               {tokens.map((token, i) => {
-                const addr  = token.tokenAddress || token.solAddress || "";
-                const entry = priceMap[addr] || {};
-                const isSol = addr === SOL_MINT;
-                const saving = savingMap[addr] || false;
+                const key    = priceKey(token);
+                const entry  = priceMap[key] || {};
+                const isSol  = token.tokenAddress === SOL_MINT;
+                const saving = savingMap[key] || false;
                 const hasPrice = entry.avgPrice != null && !isNaN(entry.avgPrice);
 
                 return (
-                  <tr key={addr || i} className="border-b border-gray-100 hover:bg-gray-50 transition-colors">
+                  <tr key={token._id || i} className="border-b border-gray-100 hover:bg-gray-50 transition-colors">
                     <td className="px-4 py-3 text-gray-400 text-xs">{i + 1}</td>
-                    <td className="px-4 py-3 font-semibold text-gray-700 text-xs">{token.symbol}</td>
-                    <td className="px-4 py-3 font-mono text-xs text-gray-400">{shortAddr(addr)}</td>
+                    <td className="px-4 py-3">
+                      <span className="font-semibold text-gray-800 text-sm">{token.symbol}</span>
+                      {token.name && <span className="ml-2 text-xs text-gray-400">{token.name}</span>}
+                    </td>
                     <td className="px-4 py-3">
                       {hasPrice ? (
                         <span className={`text-xs px-2 py-0.5 rounded font-medium ${sourceBadge(entry.priceSource)}`}>
@@ -412,23 +467,21 @@ function TokenPricesTab() {
                           type="number" min="0" step="any"
                           placeholder="0.00"
                           value={entry.avgPrice ?? ""}
-                          onChange={(e) => handleInput(addr, e.target.value)}
-                          className={`w-36 border rounded px-2 py-1 text-xs text-gray-800 focus:outline-none focus:border-blue-500 bg-white ${entry.dirty ? "border-orange-400" : "border-gray-300"}`}
+                          onChange={(e) => handleInput(key, e.target.value)}
+                          className={`w-44 border rounded px-2 py-1.5 text-sm text-gray-800 focus:outline-none focus:border-blue-500 bg-white ${entry.dirty ? "border-orange-400" : "border-gray-300"}`}
                         />
                       </div>
                     </td>
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-2">
-                        <button
-                          onClick={() => savePrice({ ...token, tokenAddress: addr })}
-                          disabled={saving || !entry.dirty}
-                          className="flex items-center gap-1 border border-green-300 text-green-600 hover:bg-green-50 disabled:opacity-40 text-xs px-2 py-1 rounded transition-colors bg-white">
+                        <button onClick={() => savePrice(token)} disabled={saving || !entry.dirty}
+                          className="flex items-center gap-1 border border-green-300 text-green-600 hover:bg-green-50 disabled:opacity-40 text-xs px-3 py-1.5 rounded transition-colors bg-white">
                           {saving ? <Loader2 size={11} className="animate-spin" /> : <Save size={11} />}
                           Save
                         </button>
                         {isSol && (
                           <button onClick={fetchSolPrice} disabled={fetchingSol}
-                            className="flex items-center gap-1 border border-orange-300 text-orange-500 hover:bg-orange-50 disabled:opacity-40 text-xs px-2 py-1 rounded transition-colors bg-white">
+                            className="flex items-center gap-1 border border-orange-300 text-orange-500 hover:bg-orange-50 text-xs px-2 py-1.5 rounded transition-colors bg-white">
                             <RefreshCw size={11} /> Fetch
                           </button>
                         )}
