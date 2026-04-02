@@ -26,30 +26,28 @@ function statusBadge(status) {
   return "bg-yellow-100 text-yellow-700 border border-yellow-300";
 }
 
-/** Build Excel workbook with Raw_Data, Filtered, Sums sheets */
-function buildExcel(raw, filtered, sums, tokenPrices, walletAddress, date, poolName) {
+/**
+ * Build 3-sheet Excel matching the Python script output:
+ *   Sheet 1: Raw_Data   — all Solscan transfer records
+ *   Sheet 2: Filtered   — records filtered by valid_addresses + valid_tokens
+ *   Sheet 3: Sums       — in/out balance totals per token
+ */
+function buildExcel(raw, filtered, sums, walletAddress, date, poolName) {
   const wb = XLSX.utils.book_new();
-
   XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(raw.length ? raw : [{}]), "Raw_Data");
   XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(filtered.length ? filtered : [{}]), "Filtered");
 
-  const sumsWithPrice = sums.map((s) => ({
-    case:          s.case,
-    token_address: s.token_address,
-    token_symbol:  s.token_symbol,
-    flow:          s.flow,
-    balance_sum:   s.balance_sum,
-    avg_price_usd: tokenPrices[s.token_address] ?? "",
-    value_usd:
-      tokenPrices[s.token_address] != null
-        ? (s.balance_sum * tokenPrices[s.token_address]).toFixed(4)
-        : "",
+  const sumsRows = sums.map((s) => ({
+    Case:          s.case,
+    Token_Address: s.token_address,
+    Token_Symbol:  s.token_symbol,
+    Flow:          s.flow,
+    Balance_Sum:   s.balance_sum,
   }));
-  XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(sumsWithPrice.length ? sumsWithPrice : [{}]), "Sums");
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(sumsRows.length ? sumsRows : [{}]), "Sums");
 
   const filename = `${date}_${poolName}_${shortAddr(walletAddress)}.xlsx`
     .replace(/[^a-zA-Z0-9._-]/g, "_");
-
   XLSX.writeFile(wb, filename);
 }
 
@@ -125,20 +123,20 @@ export default function AuditExport() {
     }
   }
 
-  // ── Download single wallet ─────────────────────────────────────────────────
+  // ── Download single wallet — Raw_Data / Filtered / Sums (matches Python script) ──
   async function downloadWallet(wallet) {
     const id = wallet._id;
     setDlState((s) => ({ ...s, [id]: "loading" }));
     try {
       const res = await ADMIN_API.AUDIT_GET_SWAP_TRANSFERS({
-        walletId: id,
+        walletId:  id,
         startDate: date,
-        endDate: date,
+        endDate:   date,
       });
-      const { raw, filtered, sums, poolName } = res.data;
-      buildExcel(raw, filtered, sums, tokenPrices, wallet.walletAddress, date, poolName || wallet.symbol);
+      const { raw, filtered, sums, poolName, walletAddress } = res.data;
+      buildExcel(raw, filtered, sums, walletAddress || wallet.walletAddress, date, poolName || wallet.symbol);
       setDlState((s) => ({ ...s, [id]: "done" }));
-      toast.success(`Downloaded: ${shortAddr(wallet.walletAddress)}`);
+      toast.success(`Downloaded ${raw.length} records — ${shortAddr(wallet.walletAddress)}`);
     } catch {
       setDlState((s) => ({ ...s, [id]: "error" }));
       toast.error(`Failed: ${shortAddr(wallet.walletAddress)}`);

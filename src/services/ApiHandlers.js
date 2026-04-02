@@ -530,6 +530,14 @@ export const ADMIN_API = {
     if (endDate) params.endDate = endDate;
     return api.get(API_CONFIG.AUDIT_GET_SWAP_TRANSFERS, { params });
   },
+
+  AUDIT_GET_DEFI_ACTIVITIES: ({ walletId, startDate, endDate } = {}) => {
+    const params = {};
+    if (walletId) params.walletId = walletId;
+    if (startDate) params.startDate = startDate;
+    if (endDate) params.endDate = endDate;
+    return api.get(API_CONFIG.AUDIT_GET_DEFI_ACTIVITIES, { params }, { timeout: 120000 });
+  },
 };
 
 export default api;
