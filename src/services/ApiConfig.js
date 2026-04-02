@@ -105,8 +105,9 @@ export const API_CONFIG = {
   AUDIT_SAVE_TOKEN_PRICE:      `${audit}/token-prices`,
 
   // ── Swap Wallet Export (MM trading wallets) ────────────────────────────────
-  AUDIT_GET_SWAP_POOLS:        `${audit}/solscan/swap-pools`,
-  AUDIT_GET_SWAP_WALLETS:      `${audit}/solscan/swap-wallets`,
-  AUDIT_GET_SWAP_TRANSFERS:    `${audit}/solscan/swap-transfers`,
+  AUDIT_GET_SWAP_POOLS:         `${audit}/solscan/swap-pools`,
+  AUDIT_GET_SWAP_WALLETS:       `${audit}/solscan/swap-wallets`,
+  AUDIT_GET_SWAP_TRANSFERS:     `${audit}/solscan/swap-transfers`,
+  AUDIT_GET_DEFI_ACTIVITIES:    `${audit}/solscan/defi-activities`,
 
 };
