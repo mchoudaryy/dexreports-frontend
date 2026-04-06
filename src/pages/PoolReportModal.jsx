@@ -156,7 +156,7 @@ const PoolReportModal = ({ reportData, isOpen, onClose }) => {
                     <ArrowUpRight className="h-6 w-6 text-white" />
                   </div>
                   <div className="bg-emerald-50 text-emerald-600 text-xs font-semibold px-2 py-1 rounded-full">
-                    BUYS
+                    TOTAL BUYS
                   </div>
                 </div>
                 <div>
@@ -177,7 +177,7 @@ const PoolReportModal = ({ reportData, isOpen, onClose }) => {
                     <ArrowDownRight className="h-6 w-6 text-white" />
                   </div>
                   <div className="bg-rose-50 text-rose-600 text-xs font-semibold px-2 py-1 rounded-full">
-                    SELLS
+                    TOTAL SELLS
                   </div>
                 </div>
                 <div>
