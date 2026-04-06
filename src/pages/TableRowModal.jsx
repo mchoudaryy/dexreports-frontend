@@ -178,13 +178,13 @@ const TableRowModal = ({ rowData, isOpen, onClose, type = "report" }) => {
                       <ArrowUpRight className="h-6 w-6 text-white" />
                     </div>
                     <div className="bg-emerald-50 text-emerald-600 text-xs font-semibold px-2 py-1 rounded-full">
-                      BUYS
+                      TOTAL BUYS
                     </div>
                   </div>
                   <div>
                     <div className="flex items-end justify-between">
                       <p className="text-2xl font-bold text-gray-900">
-                        {formatNumber(rowData.buys || 0)}
+                        {formatNumber(rowData.totalBuys || rowData.buys || 0)}
                       </p>
                       {rowData.totalTransactions > 0 && (
                         <div className="bg-emerald-50 rounded-lg px-3 py-1">
@@ -213,13 +213,13 @@ const TableRowModal = ({ rowData, isOpen, onClose, type = "report" }) => {
                       <ArrowDownRight className="h-6 w-6 text-white" />
                     </div>
                     <div className="bg-rose-50 text-rose-600 text-xs font-semibold px-2 py-1 rounded-full">
-                      SELLS
+                      TOTAL SELLS
                     </div>
                   </div>
                   <div>
                     <div className="flex items-end justify-between">
                       <p className="text-2xl font-bold text-gray-900">
-                        {formatNumber(rowData.sells || 0)}
+                        {formatNumber(rowData.totalSells || rowData.sells || 0)}
                       </p>
                       {rowData.totalTransactions > 0 && (
                         <div className="bg-rose-50 rounded-lg px-3 py-1">
@@ -253,6 +253,8 @@ const TableRowModal = ({ rowData, isOpen, onClose, type = "report" }) => {
                 </h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {[
+                    { label: "MM BUYS", value: rowData.buys, icon: ArrowUpRight, bg: "bg-indigo-50", border: "border-indigo-100", iconColor: "text-indigo-500" },
+                    { label: "MM SELLS", value: rowData.sells, icon: ArrowDownRight, bg: "bg-rose-50", border: "border-rose-100", iconColor: "text-rose-500" },
                     { label: "SOLANA AVG PRICE", value: rowData.solAverage, icon: Coins, bg: "bg-purple-50", border: "border-purple-100", iconColor: "text-purple-500", isCurrency: true },
                     { label: "TOTAL VOLUME", value: rowData.totalVolume, icon: DollarSign, bg: "bg-blue-50", border: "border-blue-100", iconColor: "text-blue-500", isCurrency: true },
                     { label: "MM VOLUME TO POOL", value: rowData.mmTotalVolume, icon: BarChart3, bg: "bg-amber-50", border: "border-amber-100", iconColor: "text-amber-500", isCurrency: true },
