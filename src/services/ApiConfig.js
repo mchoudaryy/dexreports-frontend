@@ -59,6 +59,8 @@ export const API_CONFIG = {
 
   GET_DAILY_POOL_REPORTS_AGGREGATES: `${main}/getDailyWalletReportsAggregates`,
 
+  GET_ALL_MM_WALLETS: `${main}/getAllMMWallets`,
+
   // =============================== ADMIN ====================================
 
   ADMIN_GET_NETWORKS: `${admin}/getNetworks`,
