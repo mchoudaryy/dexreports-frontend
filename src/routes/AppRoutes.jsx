@@ -9,6 +9,7 @@ import Usermanagement from "../pages/Admin/Usermanagement";
 import Network from "../pages/Admin/Network";
 import Platform from "../pages/Admin/Platform";
 import Wallets from "../pages/Admin/Wallets";
+import MMWallets from "../pages/Admin/MMWallets";
 import Token from "../pages/Admin/Token";
 import Setting from "../pages/Admin/Setting";
 import ProtectedRoute from "../pages/Auth/ProtectedRoute";
@@ -116,6 +117,14 @@ const AppRoutes = () => {
           element={
             <AdminPageWrapper>
               <Wallets />
+            </AdminPageWrapper>
+          }
+        />
+        <Route
+          path="/admin/mm-wallets"
+          element={
+            <AdminPageWrapper>
+              <MMWallets />
             </AdminPageWrapper>
           }
         />

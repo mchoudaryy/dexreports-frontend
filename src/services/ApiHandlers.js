@@ -391,6 +391,16 @@ export const ADMIN_API = {
     return api.get(API_CONFIG.GET_DAILY_POOL_REPORTS_AGGREGATES, { params });
   },
 
+  GET_ALL_MM_WALLETS: ({ status, tokenId, search, page, limit } = {}) => {
+    const params = {};
+    if (status) params.status = status;
+    if (tokenId) params.tokenId = tokenId;
+    if (search) params.search = search;
+    if (page) params.page = page;
+    if (limit) params.limit = limit;
+    return api.get(API_CONFIG.GET_ALL_MM_WALLETS, { params });
+  },
+
   // =============================== ADMIN ====================================
 
   ADMIN_GET_NETWORKS: () => api.get(API_CONFIG.ADMIN_GET_NETWORKS),

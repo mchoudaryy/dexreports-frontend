@@ -145,6 +145,7 @@ export const Sidebar = ({ sidebarOpen, setSidebarOpen }) => {
               { title: "Add Tokens", path: "/admin/tokens" },
               { title: "Add wallets", path: "/admin/wallets-data" },
               { title: "Add Pool Wallets", path: "/admin/pools-wallets-data" },
+              { title: "MM Wallets", path: "/admin/mm-wallets" },
               { title: "Settings", path: "/admin/settings" },
             ],
           }
