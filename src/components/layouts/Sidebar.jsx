@@ -413,7 +413,7 @@ export const Sidebar = ({ sidebarOpen, setSidebarOpen }) => {
                           {item.title}
                         </span>
                       </div>
-                      {isOpen || isActiveParent ? (
+                      {isOpen ? (
                         <ChevronUp
                           size={16}
                           className="text-orange-600 transition-all duration-500 ease-out scale-110 z-10"
@@ -429,7 +429,7 @@ export const Sidebar = ({ sidebarOpen, setSidebarOpen }) => {
                     <div
                       className={clsx(
                         "ml-4 pl-4 border-l-2 border-gray-200/60 overflow-hidden transition-all duration-700 ease-[cubic-bezier(0.25,0.46,0.45,0.94)] space-y-1",
-                        isOpen || isActiveParent
+                        isOpen
                           ? "max-h-96 opacity-100 mt-2 translate-y-0"
                           : "max-h-0 opacity-0 -translate-y-2"
                       )}
@@ -709,7 +709,7 @@ export const Sidebar = ({ sidebarOpen, setSidebarOpen }) => {
                         </div>
                         <span className="font-medium">{item.title}</span>
                       </div>
-                      {isOpen || isActiveParent ? (
+                      {isOpen ? (
                         <ChevronUp size={16} className="text-orange-600" />
                       ) : (
                         <ChevronDown size={16} className="text-gray-400" />
@@ -719,7 +719,7 @@ export const Sidebar = ({ sidebarOpen, setSidebarOpen }) => {
                     <div
                       className={clsx(
                         "ml-4 pl-4 border-l-2 border-gray-200/60 overflow-hidden transition-all duration-700 ease-[cubic-bezier(0.25,0.46,0.45,0.94)] space-y-1",
-                        isOpen || isActiveParent
+                        isOpen
                           ? "max-h-96 opacity-100 mt-2 translate-y-0"
                           : "max-h-0 opacity-0 -translate-y-2"
                       )}
