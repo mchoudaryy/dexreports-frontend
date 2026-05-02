@@ -68,6 +68,9 @@ const RWADetails = () => {
       companysLiquidity:
         report.companysLiquidity ?? report.companyLiquidity ?? 0,
       usersLiquidity: report.usersLiquidity ?? report.clientLiquidity ?? 0,
+      // Compound (superadmin-only display)
+      compoundRevenue: report.compoundRevenue ?? 0,
+      compoundLiquidity: report.compoundLiquidity ?? 0,
     });
     setIsModalOpen(true);
   };

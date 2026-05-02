@@ -770,6 +770,16 @@ const TokenAnalytics = ({
                 <th className="px-6 py-4 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider whitespace-nowrap">
                   LP Revenue
                 </th>
+                {user?.role === "superuser" && (
+                  <th className="px-6 py-4 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider whitespace-nowrap">
+                    Compound Rev
+                  </th>
+                )}
+                {user?.role === "superuser" && (
+                  <th className="px-6 py-4 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider whitespace-nowrap">
+                    Compound Liq
+                  </th>
+                )}
                 {/* <th className="px-6 py-4 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider whitespace-nowrap">
                   Users Rev
                 </th>
@@ -847,6 +857,38 @@ const TokenAnalytics = ({
                         </span>
                       </div>
                     </td>
+                    {user?.role === "superuser" && (
+                      <td className="px-6 py-4 whitespace-nowrap text-center">
+                        <div className="flex items-center justify-center gap-2">
+                          <Coins
+                            size={16}
+                            className="text-cyan-500 flex-shrink-0"
+                          />
+                          <span className="text-sm font-semibold text-gray-900">
+                            ${(report.compoundRevenue || 0).toLocaleString("en-US", {
+                              minimumFractionDigits: 2,
+                              maximumFractionDigits: 2,
+                            })}
+                          </span>
+                        </div>
+                      </td>
+                    )}
+                    {user?.role === "superuser" && (
+                      <td className="px-6 py-4 whitespace-nowrap text-center">
+                        <div className="flex items-center justify-center gap-2">
+                          <Coins
+                            size={16}
+                            className="text-cyan-500 flex-shrink-0"
+                          />
+                          <span className="text-sm font-semibold text-gray-900">
+                            ${(report.compoundLiquidity || 0).toLocaleString("en-US", {
+                              minimumFractionDigits: 2,
+                              maximumFractionDigits: 2,
+                            })}
+                          </span>
+                        </div>
+                      </td>
+                    )}
                     {/* <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-center">
                       ${(report.usersRevenue || 0).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                     </td>
@@ -908,7 +950,7 @@ const TokenAnalytics = ({
               ) : (
                 <tr>
                   <td
-                    colSpan="6"
+                    colSpan={user?.role === "superuser" ? "8" : "6"}
                     className="px-6 py-12 text-center text-gray-500"
                   >
                     <div className="flex flex-col items-center gap-3">

@@ -217,12 +217,18 @@ const PoolReportModal = ({ reportData, isOpen, onClose }) => {
                     { label: "FINAL COMPANY REVENUE", value: mmObj.companysYeild, icon: Building2, bg: "bg-blue-50", border: "border-blue-100", iconColor: "text-blue-500", isCurrency: true },
                     { label: "FINAL CLIENTS REVENUE", value: mmObj.usersYeild, icon: User, bg: "bg-green-50", border: "border-green-100", iconColor: "text-green-500", isCurrency: true },
                   ] : []),
+                  ...(user?.role === "superuser" ? [
+                    { label: "COMPOUND REVENUE", value: mmObj.compoundRevenue, icon: Building2, bg: "bg-cyan-50", border: "border-cyan-100", iconColor: "text-cyan-500", isCurrency: true },
+                  ] : []),
                   { label: "MM PLATFORM FEE", value: mmObj.mmRayFee, icon: Fuel, bg: "bg-orange-50", border: "border-orange-100", iconColor: "text-orange-500", isCurrency: true },
                   { label: "MM TOTAL COST", value: mmObj.walletLoss, icon: TrendingDown, bg: "bg-rose-50", border: "border-rose-100", iconColor: "text-rose-500", isCurrency: true },
                   { label: "TOTAL LIQUIDITY", value: mmObj.poolLiquidity, icon: Activity, bg: "bg-amber-50", border: "border-amber-100", iconColor: "text-amber-500", isCurrency: true },
                   ...(user?.role !== "superuser" ? [
                     { label: "COMPANY LIQUIDITY", value: mmObj.companysLiquidity, icon: Building2, bg: "bg-blue-50", border: "border-blue-100", iconColor: "text-blue-500", isCurrency: true },
                     { label: "USERS LIQUIDITY", value: mmObj.usersLiquidity, icon: Users, bg: "bg-emerald-50", border: "border-emerald-100", iconColor: "text-emerald-500", isCurrency: true },
+                  ] : []),
+                  ...(user?.role === "superuser" ? [
+                    { label: "COMPOUND LIQUIDITY", value: mmObj.compoundLiquidity, icon: Building2, bg: "bg-cyan-50", border: "border-cyan-100", iconColor: "text-cyan-500", isCurrency: true },
                   ] : []),
                 ].map((item, index) => (
                   <div key={index} className={`flex justify-between items-center p-4 ${item.bg} rounded-xl border ${item.border}`}>
