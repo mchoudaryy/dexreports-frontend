@@ -770,12 +770,12 @@ const TokenAnalytics = ({
                 <th className="px-6 py-4 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider whitespace-nowrap">
                   LP Revenue
                 </th>
-                {user?.role === "superuser" && (
+                {user?.role !== "superuser" && (
                   <th className="px-6 py-4 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider whitespace-nowrap">
                     Compound Rev
                   </th>
                 )}
-                {user?.role === "superuser" && (
+                {user?.role !== "superuser" && (
                   <th className="px-6 py-4 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider whitespace-nowrap">
                     Compound Liq
                   </th>
@@ -857,7 +857,7 @@ const TokenAnalytics = ({
                         </span>
                       </div>
                     </td>
-                    {user?.role === "superuser" && (
+                    {user?.role !== "superuser" && (
                       <td className="px-6 py-4 whitespace-nowrap text-center">
                         <div className="flex items-center justify-center gap-2">
                           <Coins
@@ -873,7 +873,7 @@ const TokenAnalytics = ({
                         </div>
                       </td>
                     )}
-                    {user?.role === "superuser" && (
+                    {user?.role !== "superuser" && (
                       <td className="px-6 py-4 whitespace-nowrap text-center">
                         <div className="flex items-center justify-center gap-2">
                           <Coins
@@ -950,7 +950,7 @@ const TokenAnalytics = ({
               ) : (
                 <tr>
                   <td
-                    colSpan={user?.role === "superuser" ? "8" : "6"}
+                    colSpan={user?.role !== "superuser" ? "8" : "6"}
                     className="px-6 py-12 text-center text-gray-500"
                   >
                     <div className="flex flex-col items-center gap-3">
