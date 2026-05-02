@@ -71,6 +71,8 @@ const RWADetails = () => {
       // Compound (superadmin-only display)
       compoundRevenue: report.compoundRevenue ?? 0,
       compoundLiquidity: report.compoundLiquidity ?? 0,
+      // Extra vault buckets (vault 3+ from VaultMapping config)
+      extraVaultData: report.extraVaultData ?? [],
     });
     setIsModalOpen(true);
   };

@@ -266,6 +266,15 @@ const TableRowModal = ({ rowData, isOpen, onClose, type = "report" }) => {
                       { label: "FINAL COMPANY REVENUE", value: rowData.companysYeild, icon: Building2, bg: "bg-blue-50", border: "border-blue-100", iconColor: "text-blue-500", isCurrency: true },
                       { label: "FINAL CLIENTS REVENUE", value: rowData.usersYeild, icon: User, bg: "bg-green-50", border: "border-green-100", iconColor: "text-green-500", isCurrency: true },
                       { label: "COMPOUND REVENUE", value: rowData.compoundRevenue, icon: Building2, bg: "bg-cyan-50", border: "border-cyan-100", iconColor: "text-cyan-500", isCurrency: true },
+                      ...(rowData.extraVaultData || []).map((v) => ({
+                        label: `${String(v.label || "VAULT").toUpperCase()} REVENUE`,
+                        value: v.revenueUSD,
+                        icon: Building2,
+                        bg: "bg-cyan-50",
+                        border: "border-cyan-100",
+                        iconColor: "text-cyan-500",
+                        isCurrency: true,
+                      })),
                     ] : []),
                     { label: "MM PLATFORM FEE", value: rowData.mmRayFee, icon: Fuel, bg: "bg-orange-50", border: "border-orange-100", iconColor: "text-orange-500", isCurrency: true },
                     { label: "MM TOTAL COST", value: rowData.walletLoss, icon: TrendingDown, bg: "bg-rose-50", border: "border-rose-100", iconColor: "text-rose-500", isCurrency: true },
@@ -274,6 +283,15 @@ const TableRowModal = ({ rowData, isOpen, onClose, type = "report" }) => {
                       { label: "COMPANY LIQUIDITY", value: rowData.companysLiquidity, icon: Building2, bg: "bg-blue-50", border: "border-blue-100", iconColor: "text-blue-500", isCurrency: true },
                       { label: "COMPOUND LIQUIDITY", value: rowData.compoundLiquidity, icon: Building2, bg: "bg-cyan-50", border: "border-cyan-100", iconColor: "text-cyan-500", isCurrency: true },
                       { label: "USERS LIQUIDITY", value: rowData.usersLiquidity, icon: Users, bg: "bg-emerald-50", border: "border-emerald-100", iconColor: "text-emerald-500", isCurrency: true },
+                      ...(rowData.extraVaultData || []).map((v) => ({
+                        label: `${String(v.label || "VAULT").toUpperCase()} LIQUIDITY`,
+                        value: v.liquidityUSD,
+                        icon: Building2,
+                        bg: "bg-cyan-50",
+                        border: "border-cyan-100",
+                        iconColor: "text-cyan-500",
+                        isCurrency: true,
+                      })),
                     ] : []),
                   ].map((item, index) => (
                     <div key={index} className={`flex justify-between items-center p-4 ${item.bg} rounded-xl border ${item.border}`}>

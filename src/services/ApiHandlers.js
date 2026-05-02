@@ -498,6 +498,18 @@ export const ADMIN_API = {
     return api.post(API_CONFIG.ADMIN_UPDATE_COMPOUND_WALLET, payload);
   },
 
+  // ── Vault Mappings (multi-vault revenue routing) ──────────────────────────
+  ADMIN_GET_VAULT_MAPPINGS: () =>
+    api.get(API_CONFIG.ADMIN_GET_VAULT_MAPPINGS),
+  ADMIN_ADD_VAULT_MAPPING: (data) =>
+    api.post(API_CONFIG.ADMIN_ADD_VAULT_MAPPING, data),
+  ADMIN_UPDATE_VAULT_MAPPING: (id, data) =>
+    api.put(`${API_CONFIG.ADMIN_UPDATE_VAULT_MAPPING}/${id}`, data),
+  ADMIN_TOGGLE_VAULT_MAPPING: (id) =>
+    api.post(`${API_CONFIG.ADMIN_TOGGLE_VAULT_MAPPING}/${id}/toggle`),
+  ADMIN_DELETE_VAULT_MAPPING: (id) =>
+    api.delete(`${API_CONFIG.ADMIN_DELETE_VAULT_MAPPING}/${id}`),
+
   // ── Wallet Audit / Solscan Export ─────────────────────────────────────────
   AUDIT_GET_SOLSCAN_POOLS: () =>
     api.get(API_CONFIG.AUDIT_GET_SOLSCAN_POOLS),

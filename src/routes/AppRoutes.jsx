@@ -31,6 +31,7 @@ import RWADetails from "../pages/RWADetails";
 import Walletsdata from "../pages/Admin/Walletsdata";
 import Poolswalletdata from "../pages/Admin/Poolswalletdata";
 import PoolsWalletsData from "../pages/Admin/PoolsWalletsData";
+import VaultMappings from "../pages/Admin/VaultMappings";
 import AuditExport from "../pages/AuditExport";
 
 // Component to redirect authenticated users away from auth pages
@@ -149,6 +150,14 @@ const AppRoutes = () => {
           element={
             <AdminPageWrapper>
               <PoolsWalletsData />
+            </AdminPageWrapper>
+          }
+        />
+        <Route
+          path="/admin/vault-mappings"
+          element={
+            <AdminPageWrapper>
+              <VaultMappings />
             </AdminPageWrapper>
           }
         />

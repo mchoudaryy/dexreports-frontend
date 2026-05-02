@@ -94,6 +94,13 @@ export const API_CONFIG = {
   ADMIN_ADD_COMPOUND_WALLET: `${admin}/addCompoundWallet`,
   ADMIN_UPDATE_COMPOUND_WALLET: `${admin}/addCompoundWallet`,
 
+  // ── Vault Mappings (multi-vault revenue routing) ────────────────────
+  ADMIN_GET_VAULT_MAPPINGS: `${admin}/vault-mappings`,
+  ADMIN_ADD_VAULT_MAPPING: `${admin}/vault-mappings`,
+  ADMIN_UPDATE_VAULT_MAPPING: `${admin}/vault-mappings`, // PUT /:id
+  ADMIN_TOGGLE_VAULT_MAPPING: `${admin}/vault-mappings`, // POST /:id/toggle
+  ADMIN_DELETE_VAULT_MAPPING: `${admin}/vault-mappings`, // DELETE /:id
+
   ADMIN_CREATE_OR_UPDATE_SETTINGS: `${admin}/createOrUpdateSettings`,
   ADMIN_GET_SETTINGS: `${admin}/getSettings`,
 

@@ -55,6 +55,11 @@ export const AdminSidebar = ({ sidebarOpen, setSidebarOpen }) => {
       path: "/admin/pools-wallets-data",
     },
     {
+      title: "Vault Mappings",
+      icon: <Wallet size={20} />,
+      path: "/admin/vault-mappings",
+    },
+    {
       title: "Settings",
       icon: <Settings size={20} />,
       path: "/admin/settings",
